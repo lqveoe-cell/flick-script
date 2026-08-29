@@ -1,5 +1,5 @@
--- [[ FLICK [FPS] - Ultimate B&W HvH Script ]] --
--- Совместимость: Delta (Mobile & PC) / Synapse / Solara / Fluxus
+-- [[ FLICK [FPS] - Undetected B&W HvH Script ]] --
+-- Совместимость: Delta (Mobile & PC) | Без перехвата __namecall
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -7,54 +7,55 @@ local UserInputService = game:GetService("UserInputService")
 local Camera = workspace.CurrentCamera
 local LocalPlayer = Players.LocalPlayer
 
--- Настройки (Settings)
+-- Настройки
 local Settings = {
-    Aim = { Enabled = false, Silent = false, LockPart = "Head" },
-    FOV = { Enabled = false, Radius = 150 },
+    Aim = { Enabled = false },
+    FOV = { Enabled = false, Radius = 120, Visible = false },
     ESP = { Boxes = false, Tracers = false, Chams = false },
-    Movement = { Speedhack = false, Speed = 45, Fly = false, FlySpeed = 50, BHop = false, Strafe = false },
-    Spinbot = { Enabled = false, Speed = 45 },
-    ThirdPerson = { Enabled = false, Distance = 12 },
-    HvH = {
-        AntiAim = false,
-        DesyncYaw = false,
-        NoRecoil = false,
-        NoSpread = false,
-        RapidFire = false,
-        Wallbang = false,
-        AutoShoot = false,
-        HitSound = false
-    }
+    Spinbot = { Enabled = false, Speed = 35 },
+    Speedhack = { Enabled = false, Speed = 45 },
+    Fly = { Enabled = false, Speed = 40 },
+    ThirdPerson = { Enabled = false, Distance = 10 },
+    HvH = { AntiAim = false, BHop = false, TargetStrafe = false }
 }
 
--- Чистка старого GUI
+-- Создание FOV круга через Drawing (без вмешательства в метатаблицы)
+local FOVCircle = Drawing.new("Circle")
+FOVCircle.Color = Color3.fromRGB(255, 255, 255)
+FOVCircle.Thickness = 1
+FOVCircle.NumSides = 60
+FOVCircle.Radius = Settings.FOV.Radius
+FOVCircle.Filled = false
+FOVCircle.Visible = false
+
+-- Очистка старого GUI
 local playerGui = LocalPlayer:WaitForChild("PlayerGui")
-if playerGui:FindFirstChild("BW_HvH_Gui_V2") then
-    playerGui.BW_HvH_Gui_V2:Destroy()
+if playerGui:FindFirstChild("BW_Safe_Gui") then
+    playerGui.BW_Safe_Gui:Destroy()
 end
 
--- GUI Создание
+-- Интерфейс
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "BW_HvH_Gui_V2"
+ScreenGui.Name = "BW_Safe_Gui"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = playerGui
 
--- Кнопка сворачивания (Mobile Friendly)
+-- Кнопка для мобильных устройств
 local ToggleBtn = Instance.new("TextButton")
-ToggleBtn.Size = UDim2.new(0, 100, 0, 32)
+ToggleBtn.Size = UDim2.new(0, 90, 0, 30)
 ToggleBtn.Position = UDim2.new(0.02, 0, 0.15, 0)
-ToggleBtn.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
+ToggleBtn.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
 ToggleBtn.BorderColor3 = Color3.fromRGB(255, 255, 255)
 ToggleBtn.Text = "MENU [K]"
 ToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 ToggleBtn.Font = Enum.Font.Code
-ToggleBtn.TextSize = 13
+ToggleBtn.TextSize = 12
 ToggleBtn.Parent = ScreenGui
 
--- Главная панель
+-- Главное окно
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 380, 0, 440)
-MainFrame.Position = UDim2.new(0.5, -190, 0.5, -220)
+MainFrame.Size = UDim2.new(0, 350, 0, 400)
+MainFrame.Position = UDim2.new(0.5, -175, 0.5, -200)
 MainFrame.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
 MainFrame.BorderColor3 = Color3.fromRGB(255, 255, 255)
 MainFrame.BorderSizePixel = 1
@@ -62,22 +63,20 @@ MainFrame.Active = true
 MainFrame.Draggable = true
 MainFrame.Parent = ScreenGui
 
--- Шапка
 local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1, 0, 0, 32)
-Title.BackgroundColor3 = Color3.fromRGB(22, 22, 22)
+Title.Size = UDim2.new(1, 0, 0, 30)
+Title.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 Title.BorderColor3 = Color3.fromRGB(255, 255, 255)
-Title.Text = "  FLICK [FPS] - ULTIMATE HvH"
+Title.Text = "  FLICK | SAFE B&W HvH"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.Font = Enum.Font.Code
 Title.TextSize = 13
 Title.Parent = MainFrame
 
--- Список переключателей
 local Container = Instance.new("ScrollingFrame")
-Container.Size = UDim2.new(1, -12, 1, -44)
-Container.Position = UDim2.new(0, 6, 0, 38)
+Container.Size = UDim2.new(1, -10, 1, -40)
+Container.Position = UDim2.new(0, 5, 0, 35)
 Container.BackgroundTransparency = 1
 Container.BorderSizePixel = 0
 Container.ScrollBarThickness = 3
@@ -91,8 +90,8 @@ UIListLayout.Padding = UDim.new(0, 4)
 local function CreateToggle(name, callback)
     local Button = Instance.new("TextButton")
     Button.Size = UDim2.new(1, -10, 0, 28)
-    Button.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
-    Button.BorderColor3 = Color3.fromRGB(50, 50, 50)
+    Button.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    Button.BorderColor3 = Color3.fromRGB(60, 60, 60)
     Button.Text = "  [OFF] " .. name
     Button.TextColor3 = Color3.fromRGB(160, 160, 160)
     Button.TextXAlignment = Enum.TextXAlignment.Left
@@ -106,37 +105,32 @@ local function CreateToggle(name, callback)
         if enabled then
             Button.Text = "  [ON] " .. name
             Button.TextColor3 = Color3.fromRGB(255, 255, 255)
-            Button.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+            Button.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
             Button.BorderColor3 = Color3.fromRGB(255, 255, 255)
         else
             Button.Text = "  [OFF] " .. name
             Button.TextColor3 = Color3.fromRGB(160, 160, 160)
-            Button.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
-            Button.BorderColor3 = Color3.fromRGB(50, 50, 50)
+            Button.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+            Button.BorderColor3 = Color3.fromRGB(60, 60, 60)
         end
         callback(enabled)
     end)
 end
 
--- Добавление опций в меню
-CreateToggle("AIMBOT (Hard Headlock)", function(v) Settings.Aim.Enabled = v end)
-CreateToggle("SILENT AIM (Silent Hit)", function(v) Settings.Aim.Silent = v end)
-CreateToggle("TRIGGERBOT (Auto Shoot)", function(v) Settings.HvH.AutoShoot = v end)
+-- Переключатели
+CreateToggle("AIMBOT (Head Lock)", function(v) Settings.Aim.Enabled = v end)
+CreateToggle("SHOW FOV CIRCLE", function(v) Settings.FOV.Visible = v end)
 CreateToggle("ESP BOXES", function(v) Settings.ESP.Boxes = v end)
 CreateToggle("ESP TRACERS", function(v) Settings.ESP.Tracers = v end)
-CreateToggle("ESP CHAMS (Wallhack Highlight)", function(v) Settings.ESP.Chams = v end)
-CreateToggle("SPINBOT (360 Yaw)", function(v) Settings.Spinbot.Enabled = v end)
-CreateToggle("SPEEDHACK (CFrame Booster)", function(v) Settings.Movement.Speedhack = v end)
-CreateToggle("FLY HACK (CFrame Fly)", function(v) Settings.Movement.Fly = v end)
-CreateToggle("AUTO BHOP", function(v) Settings.Movement.BHop = v end)
-CreateToggle("TARGET STRAFE", function(v) Settings.Movement.Strafe = v end)
-CreateToggle("THIRD PERSON (3-е лицо)", function(v) Settings.ThirdPerson.Enabled = v end)
-CreateToggle("[HvH] ANTI-AIM (Jitter Desync)", function(v) Settings.HvH.AntiAim = v end)
-CreateToggle("[HvH] REMOVE RECOIL & SPREAD", function(v) Settings.HvH.NoRecoil = v; Settings.HvH.NoSpread = v end)
-CreateToggle("[HvH] RAPID FIRE (Fast Bullet Trigger)", function(v) Settings.HvH.RapidFire = v end)
-CreateToggle("[HvH] WALLBANG PASS (Raycast Bypass)", function(v) Settings.HvH.Wallbang = v end)
+CreateToggle("ESP CHAMS", function(v) Settings.ESP.Chams = v end)
+CreateToggle("SPINBOT", function(v) Settings.Spinbot.Enabled = v end)
+CreateToggle("SPEEDHACK (Safe CFrame)", function(v) Settings.Speedhack.Enabled = v end)
+CreateToggle("FLY HACK", function(v) Settings.Fly.Enabled = v end)
+CreateToggle("THIRD PERSON", function(v) Settings.ThirdPerson.Enabled = v end)
+CreateToggle("[HvH] JITTER ANTI-AIM", function(v) Settings.HvH.AntiAim = v end)
+CreateToggle("[HvH] AUTO BHOP", function(v) Settings.HvH.BHop = v end)
+CreateToggle("[HvH] TARGET STRAFE", function(v) Settings.HvH.TargetStrafe = v end)
 
--- Переключение интерфейса
 ToggleBtn.MouseButton1Click:Connect(function()
     MainFrame.Visible = not MainFrame.Visible
 end)
@@ -147,59 +141,55 @@ UserInputService.InputBegan:Connect(function(input, gpe)
     end
 end)
 
--- Поиск цели
+-- Нахождение цели для Aim / Strafe
 local function GetClosestTarget()
-    local closest = nil
-    local maxDist = Settings.FOV.Radius
+    local target = nil
+    local shortest = Settings.FOV.Radius
     for _, p in pairs(Players:GetPlayers()) do
         if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("Head") and p.Character:FindFirstChild("Humanoid") and p.Character.Humanoid.Health > 0 then
-            local head = p.Character.Head
-            local pos, vis = Camera:WorldToViewportPoint(head.Position)
-            if vis or Settings.HvH.Wallbang then
+            local pos, vis = Camera:WorldToViewportPoint(p.Character.Head.Position)
+            if vis then
                 local dist = (Vector2.new(pos.X, pos.Y) - Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)).Magnitude
-                if dist < maxDist then
-                    maxDist = dist
-                    closest = head
+                if dist < shortest then
+                    shortest = dist
+                    target = p.Character.Head
                 end
             end
         end
     end
-    return closest
+    return target
 end
 
--- Chams (Подсветка сквозь стены)
+-- Безопасный Chams
 local function ApplyChams(player)
     if player.Character then
         for _, part in pairs(player.Character:GetChildren()) do
-            if part:IsA("BasePart") and not part:FindFirstChild("ChamsBox") then
+            if part:IsA("BasePart") and not part:FindFirstChild("SafeChams") then
                 local box = Instance.new("BoxHandleAdornment")
-                box.Name = "ChamsBox"
+                box.Name = "SafeChams"
                 box.Size = part.Size
                 box.Color3 = Color3.fromRGB(255, 255, 255)
                 box.AlwaysOnTop = true
                 box.ZIndex = 5
                 box.Adornee = part
-                box.Transparency = 0.4
+                box.Transparency = 0.5
                 box.Parent = part
             end
         end
     end
 end
 
--- Основная логика HvH
+-- Главный поток выполнения
 RunService.RenderStepped:Connect(function()
+    -- Обновление FOV
+    FOVCircle.Position = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+    FOVCircle.Visible = Settings.FOV.Visible
+
     local targetHead = GetClosestTarget()
 
-    -- Hard Aim & Silent Aim
+    -- Aimbot (прямая корректировка CFrame камеры)
     if Settings.Aim.Enabled and targetHead then
         Camera.CFrame = CFrame.new(Camera.CFrame.Position, targetHead.Position)
-    end
-
-    -- Triggerbot / AutoShoot
-    if Settings.HvH.AutoShoot and targetHead then
-        mouse1press()
-        task.wait(0.01)
-        mouse1release()
     end
 
     -- Spinbot
@@ -207,14 +197,14 @@ RunService.RenderStepped:Connect(function()
         LocalPlayer.Character.HumanoidRootPart.CFrame = LocalPlayer.Character.HumanoidRootPart.CFrame * CFrame.Angles(0, math.rad(Settings.Spinbot.Speed), 0)
     end
 
-    -- Speedhack CFrame
-    if Settings.Movement.Speedhack and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") and LocalPlayer.Character:FindFirstChild("Humanoid") then
+    -- Speedhack
+    if Settings.Speedhack.Enabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") and LocalPlayer.Character:FindFirstChild("Humanoid") then
         local moveDir = LocalPlayer.Character.Humanoid.MoveDirection
-        LocalPlayer.Character.HumanoidRootPart.CFrame = LocalPlayer.Character.HumanoidRootPart.CFrame + (moveDir * (Settings.Movement.Speed / 50))
+        LocalPlayer.Character.HumanoidRootPart.CFrame = LocalPlayer.Character.HumanoidRootPart.CFrame + (moveDir * (Settings.Speedhack.Speed / 50))
     end
 
     -- Fly Hack
-    if Settings.Movement.Fly and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+    if Settings.Fly.Enabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
         local hrp = LocalPlayer.Character.HumanoidRootPart
         local camCF = Camera.CFrame
         local flyVec = Vector3.zero
@@ -226,29 +216,27 @@ RunService.RenderStepped:Connect(function()
         if UserInputService:IsKeyDown(Enum.KeyCode.Space) then flyVec = flyVec + Vector3.new(0, 1, 0) end
         
         hrp.Velocity = Vector3.zero
-        hrp.CFrame = hrp.CFrame + (flyVec * (Settings.Movement.FlySpeed / 50))
+        hrp.CFrame = hrp.CFrame + (flyVec * (Settings.Fly.Speed / 50))
     end
 
-    -- Auto BHop
-    if Settings.Movement.BHop and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+    -- BHop
+    if Settings.HvH.BHop and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
         if UserInputService:IsKeyDown(Enum.KeyCode.Space) and LocalPlayer.Character.Humanoid.FloorMaterial ~= Enum.Material.Air then
             LocalPlayer.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
         end
     end
 
-    -- Target Strafe (Вращение вокруг цели)
-    if Settings.Movement.Strafe and targetHead and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+    -- Target Strafe
+    if Settings.HvH.TargetStrafe and targetHead and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
         local hrp = LocalPlayer.Character.HumanoidRootPart
-        local angle = tick() * 5
-        local radius = 8
-        local offset = Vector3.new(math.cos(angle) * radius, 0, math.sin(angle) * radius)
+        local angle = tick() * 6
+        local offset = Vector3.new(math.cos(angle) * 8, 0, math.sin(angle) * 8)
         hrp.CFrame = CFrame.new(targetHead.Position + offset, targetHead.Position)
     end
 
-    -- Anti-Aim (Jitter / Pitch)
+    -- Anti-Aim
     if Settings.HvH.AntiAim and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        local hrp = LocalPlayer.Character.HumanoidRootPart
-        hrp.CFrame = hrp.CFrame * CFrame.Angles(math.rad(math.random(-45, 45)), math.rad(math.random(-180, 180)), 0)
+        LocalPlayer.Character.HumanoidRootPart.CFrame = LocalPlayer.Character.HumanoidRootPart.CFrame * CFrame.Angles(0, math.rad(math.random(-180, 180)), 0)
     end
 
     -- Third Person
@@ -258,7 +246,7 @@ RunService.RenderStepped:Connect(function()
         LocalPlayer.CameraMinZoomDistance = Settings.ThirdPerson.Distance
     end
 
-    -- Chams Update
+    -- Chams
     if Settings.ESP.Chams then
         for _, p in pairs(Players:GetPlayers()) do
             if p ~= LocalPlayer then ApplyChams(p) end
@@ -266,32 +254,60 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
--- Обход метатаблиц (Silent Aim / Wallbang / NoRecoil Hooking)
-local mt = getrawmetatable(game)
-local oldNamecall = mt.__namecall
-setreadonly(mt, false)
+-- Безопасный ESP (Boxes & Tracers)
+local ESPDrawings = {}
 
-mt.__namecall = newcclosure(function(self, ...)
-    local method = getnamecallmethod()
-    local args = {...}
+local function AddESP(player)
+    local box = Drawing.new("Square")
+    box.Color = Color3.fromRGB(255, 255, 255)
+    box.Thickness = 1
+    box.Filled = false
+    box.Visible = false
 
-    if not checkcaller() then
-        if method == "FindPartOnWithIgnoreList" or method == "Raycast" then
-            if Settings.HvH.Wallbang then
-                -- Игнорировать стены при выстреле
-                return oldNamecall(self, ...)
+    local tracer = Drawing.new("Line")
+    tracer.Color = Color3.fromRGB(255, 255, 255)
+    tracer.Thickness = 1
+    tracer.Visible = false
+
+    ESPDrawings[player] = { Box = box, Tracer = tracer }
+end
+
+for _, p in pairs(Players:GetPlayers()) do
+    if p ~= LocalPlayer then AddESP(p) end
+end
+Players.PlayerAdded:Connect(AddESP)
+
+RunService.RenderStepped:Connect(function()
+    for player, drawings in pairs(ESPDrawings) do
+        if player.Character and player.Character:FindFirstChild("HumanoidRootPart") and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 then
+            local hrp = player.Character.HumanoidRootPart
+            local pos, onScreen = Camera:WorldToViewportPoint(hrp.Position)
+
+            if onScreen then
+                if Settings.ESP.Boxes then
+                    local sizeY = math.clamp(1000 / pos.Z, 10, 300)
+                    local sizeX = sizeY / 1.5
+                    drawings.Box.Size = Vector2.new(sizeX, sizeY)
+                    drawings.Box.Position = Vector2.new(pos.X - sizeX / 2, pos.Y - sizeY / 2)
+                    drawings.Box.Visible = true
+                else
+                    drawings.Box.Visible = false
+                end
+
+                if Settings.ESP.Tracers then
+                    drawings.Tracer.From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
+                    drawings.Tracer.To = Vector2.new(pos.X, pos.Y)
+                    drawings.Tracer.Visible = true
+                else
+                    drawings.Tracer.Visible = false
+                end
+            else
+                drawings.Box.Visible = false
+                drawings.Tracer.Visible = false
             end
-        end
-
-        if Settings.HvH.NoRecoil and (method == "FireServer" or method == "InvokeServer") then
-            -- Фильтрация параметров отдачи
-            if tostring(self):lower():find("recoil") or tostring(self):lower():find("spread") then
-                return nil
-            end
+        else
+            drawings.Box.Visible = false
+            drawings.Tracer.Visible = false
         end
     end
-
-    return oldNamecall(self, ...)
 end)
-
-setreadonly(mt, true)
