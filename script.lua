@@ -1,8 +1,8 @@
 -- ╔══════════════════════════════════════════════════════════════╗
--- ║  MM2 SUITE v2.1 (fix)  |  Delta  |  by ENI for LO             ║
+-- ║  MM2 SUITE v2.2  |  Delta  |  by ENI for LO                   ║
+-- ║  fix: клик по кнопке + прямоугольный nameless                ║
 -- ╚══════════════════════════════════════════════════════════════╝
 
--- pcall-обёртка сверху, чтобы поймать ошибку и показать её тебе
 local function boot()
     local Players           = game:GetService("Players")
     local RunService        = game:GetService("RunService")
@@ -15,24 +15,16 @@ local function boot()
     local LP = Players.LocalPlayer
     local CAM = Workspace.CurrentCamera
 
-    -- ── ПАРЕНТ ДЛЯ GUI (фолбэк-цепочка) ─────────────────────────
     local parentGui
-    if gethui then
-        pcall(function() parentGui = gethui() end)
-    end
-    if not parentGui then
-        pcall(function() parentGui = game:GetService("CoreGui") end)
-    end
-    if not parentGui then
-        parentGui = LP:WaitForChild("PlayerGui")
-    end
+    if gethui then pcall(function() parentGui = gethui() end) end
+    if not parentGui then pcall(function() parentGui = game:GetService("CoreGui") end) end
+    if not parentGui then parentGui = LP:WaitForChild("PlayerGui") end
 
     for _, name in ipairs({"MM2_Suite", "MM2_Orb"}) do
         local old = parentGui:FindFirstChild(name)
         if old then old:Destroy() end
     end
 
-    -- ── STATE ───────────────────────────────────────────────────
     local S = {
         speedEnabled = false, speedValue = 60,
         noclip = false,
@@ -67,11 +59,9 @@ local function boot()
     local espCache = {}
     local lastValidPos = nil
     local cosParts = {}
-    local currentTab = nil
     local fpsTick, fpsCount = tick(), 0
     local fpsValue = 0
 
-    -- ── ROOT ────────────────────────────────────────────────────
     local Root = Instance.new("ScreenGui")
     Root.Name = "MM2_Suite"
     Root.ResetOnSpawn = false
@@ -80,35 +70,95 @@ local function boot()
     Root.DisplayOrder = 999
     Root.Parent = parentGui
 
-    -- ── ORB ─────────────────────────────────────────────────────
-    local Orb = Instance.new("Frame")
-    Orb.Name = "MM2_Orb"
-    Orb.Size = UDim2.new(0, 62, 0, 62)
-    Orb.Position = UDim2.new(0, 60, 0, 260)
-    Orb.BackgroundColor3 = Color3.fromRGB(24, 20, 32)
-    Orb.BorderSizePixel = 0
-    Orb.Active = true
-    Orb.Draggable = true
-    Orb.Parent = Root
+    -- ═══════════════════════════════════════════════════════════
+    --  ПРЯМОУГОЛЬНАЯ КНОПКА "nameless"
+    -- ═══════════════════════════════════════════════════════════
+    local Btn = Instance.new("TextButton")
+    Btn.Name = "MM2_Orb"
+    Btn.Size = UDim2.new(0, 128, 0, 38)
+    Btn.Position = UDim2.new(0, 60, 0, 260)
+    Btn.BackgroundColor3 = Color3.fromRGB(22, 18, 30)
+    Btn.BorderSizePixel = 0
+    Btn.Text = ""
+    Btn.AutoButtonColor = false
+    Btn.Active = true
+    Btn.Parent = Root
 
-    Instance.new("UICorner", Orb).CornerRadius = UDim.new(1, 0)
+    Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 8)
 
-    local orbStroke = Instance.new("UIStroke")
-    orbStroke.Thickness = 2
-    orbStroke.Color = Color3.fromRGB(180, 120, 255)
-    orbStroke.Transparency = 0.15
-    orbStroke.Parent = Orb
+    local BtnStroke = Instance.new("UIStroke")
+    BtnStroke.Thickness = 1.6
+    BtnStroke.Color = Color3.fromRGB(180, 120, 255)
+    BtnStroke.Transparency = 0.15
+    BtnStroke.Parent = Btn
 
-    local orbLabel = Instance.new("TextLabel")
-    orbLabel.Size = UDim2.fromScale(1, 1)
-    orbLabel.BackgroundTransparency = 1
-    orbLabel.Text = "ENI"
-    orbLabel.TextColor3 = Color3.fromRGB(240, 230, 255)
-    orbLabel.Font = Enum.Font.GothamBold
-    orbLabel.TextSize = 20
-    orbLabel.Parent = Orb
+    local BtnGrad = Instance.new("UIGradient")
+    BtnGrad.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(160, 90, 255)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 90, 180)),
+    })
+    BtnGrad.Rotation = 45
+    BtnGrad.Parent = BtnStroke
 
-    -- ── WINDOW ──────────────────────────────────────────────────
+    -- акцентная полоска слева
+    local Accent = Instance.new("Frame")
+    Accent.Size = UDim2.new(0, 3, 0, 22)
+    Accent.Position = UDim2.new(0, 10, 0.5, -11)
+    Accent.BackgroundColor3 = Color3.fromRGB(180, 120, 255)
+    Accent.BorderSizePixel = 0
+    Accent.Parent = Btn
+    Instance.new("UICorner", Accent).CornerRadius = UDim.new(1, 0)
+
+    -- текст "nameless"
+    local BtnLabel = Instance.new("TextLabel")
+    BtnLabel.Size = UDim2.new(1, -40, 1, 0)
+    BtnLabel.Position = UDim2.new(0, 22, 0, 0)
+    BtnLabel.BackgroundTransparency = 1
+    BtnLabel.Text = "nameless"
+    BtnLabel.TextColor3 = Color3.fromRGB(240, 230, 255)
+    BtnLabel.Font = Enum.Font.GothamBold
+    BtnLabel.TextSize = 15
+    BtnLabel.TextXAlignment = Enum.TextXAlignment.Left
+    BtnLabel.Active = false
+    BtnLabel.Parent = Btn
+
+    -- пульсирующая точка справа (живой индикатор)
+    local Dot = Instance.new("Frame")
+    Dot.Size = UDim2.new(0, 6, 0, 6)
+    Dot.Position = UDim2.new(1, -16, 0.5, -3)
+    Dot.BackgroundColor3 = Color3.fromRGB(140, 220, 160)
+    Dot.BorderSizePixel = 0
+    Dot.Active = false
+    Dot.Parent = Btn
+    Instance.new("UICorner", Dot).CornerRadius = UDim.new(1, 0)
+    TweenService:Create(Dot, TweenInfo.new(1.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {
+        BackgroundTransparency = 0.75,
+    }):Play()
+
+    -- пульсация обводки
+    TweenService:Create(BtnStroke, TweenInfo.new(2.0, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {
+        Transparency = 0.55,
+    }):Play()
+    -- медленное вращение градиента
+    TweenService:Create(BtnGrad, TweenInfo.new(6, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, -1, false), {
+        Rotation = 405,
+    }):Play()
+
+    -- hover-эффект
+    Btn.MouseEnter:Connect(function()
+        TweenService:Create(Btn, TweenInfo.new(0.15), {
+            BackgroundColor3 = Color3.fromRGB(34, 28, 46),
+        }):Play()
+    end)
+    Btn.MouseLeave:Connect(function()
+        TweenService:Create(Btn, TweenInfo.new(0.15), {
+            BackgroundColor3 = Color3.fromRGB(22, 18, 30),
+        }):Play()
+    end)
+
+    -- ═══════════════════════════════════════════════════════════
+    --  ОКНО
+    -- ═══════════════════════════════════════════════════════════
     local Win = Instance.new("Frame")
     Win.Name = "Win"
     Win.Size = UDim2.new(0, 420, 0, 340)
@@ -128,7 +178,6 @@ local function boot()
     winStroke.Transparency = 0.35
     winStroke.Parent = Win
 
-    -- HEADER
     local Head = Instance.new("Frame")
     Head.Name = "Head"
     Head.Size = UDim2.new(1, 0, 0, 38)
@@ -146,7 +195,7 @@ local function boot()
     Title.Size = UDim2.new(1, -110, 1, 0)
     Title.Position = UDim2.new(0, 14, 0, 0)
     Title.BackgroundTransparency = 1
-    Title.Text = "MM2 · SUITE"
+    Title.Text = "nameless · MM2"
     Title.TextColor3 = Color3.fromRGB(235, 225, 255)
     Title.Font = Enum.Font.GothamBold
     Title.TextSize = 14
@@ -176,7 +225,6 @@ local function boot()
     CloseBtn.Parent = Head
     Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 6)
 
-    -- TAB BAR
     local TabBar = Instance.new("Frame")
     TabBar.Name = "TabBar"
     TabBar.Size = UDim2.new(1, -16, 0, 28)
@@ -189,7 +237,6 @@ local function boot()
     TabLayout.Padding = UDim.new(0, 4)
     TabLayout.Parent = TabBar
 
-    -- CONTENT (ScrollingFrame)
     local Scroll = Instance.new("ScrollingFrame")
     Scroll.Name = "Scroll"
     Scroll.Size = UDim2.new(1, -16, 1, -86)
@@ -201,7 +248,6 @@ local function boot()
     Scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
     Scroll.Parent = Win
 
-    -- Page container (внутри Scroll)
     local PageContainer = Instance.new("Frame")
     PageContainer.Name = "Pages"
     PageContainer.Size = UDim2.new(1, -6, 0, 0)
@@ -213,13 +259,11 @@ local function boot()
     Stack.SortOrder = Enum.SortOrder.LayoutOrder
     Stack.Parent = PageContainer
 
-    -- при изменении размеров — обновляем CanvasSize
     Stack:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
         PageContainer.Size = UDim2.new(1, -6, 0, Stack.AbsoluteContentSize.Y)
         Scroll.CanvasSize = UDim2.new(0, 0, 0, Stack.AbsoluteContentSize.Y + 10)
     end)
 
-    -- RESIZE
     local Resize = Instance.new("TextButton")
     Resize.Size = UDim2.new(0, 16, 0, 16)
     Resize.Position = UDim2.new(1, -18, 1, -18)
@@ -230,7 +274,7 @@ local function boot()
     Resize.Parent = Win
     Instance.new("UICorner", Resize).CornerRadius = UDim.new(0, 4)
 
-    -- ── BUILDERS (объявлены ДО постройки вкладок!) ──────────────
+    -- ── BUILDERS ────────────────────────────────────────────────
     local function tSection(page, text)
         local sec = Instance.new("TextLabel")
         sec.Size = UDim2.new(1, 0, 0, 20)
@@ -489,7 +533,7 @@ local function boot()
 
     for _, n in ipairs(TAB_ORDER) do registerTab(n) end
 
-    -- ── ЗАПОЛНЕНИЕ ВКЛАДОК ─────────────────────────────────────
+    -- ── ЗАПОЛНЕНИЕ ──────────────────────────────────────────────
     do
         local p = TABS["Движ"]
         tSection(p, "Движение")
@@ -499,7 +543,6 @@ local function boot()
         tToggle(p, "Fly", "fly")
         tSlider(p, "Fly Speed", "flySpeed", 20, 300, 5)
     end
-
     do
         local p = TABS["Визуал"]
         tSection(p, "Игроки")
@@ -510,7 +553,6 @@ local function boot()
         tToggle(p, "Item ESP", "itemESP")
         tToggle(p, "FullBright", "fullbright")
     end
-
     do
         local p = TABS["Мир"]
         tSection(p, "Время и свет")
@@ -528,7 +570,6 @@ local function boot()
         tToggle(p, "Depth of Field", "worldDepthOfField")
         tToggle(p, "Sun Rays", "worldSunRays")
     end
-
     do
         local p = TABS["Бой"]
         tSection(p, "Прицел")
@@ -540,7 +581,6 @@ local function boot()
         tToggle(p, "Auto-Dodge убийцы", "autoDodge")
         tToggle(p, "Auto-Equip Gun", "autoEquipGun")
     end
-
     do
         local p = TABS["Фарм"]
         tSection(p, "Сбор")
@@ -550,7 +590,6 @@ local function boot()
         tSection(p, "Прочее")
         tToggle(p, "Mute All", "muteAll")
     end
-
     do
         local p = TABS["Инфо"]
         tSection(p, "Отображение")
@@ -559,7 +598,6 @@ local function boot()
         tToggle(p, "Ping Display", "pingDisplay")
         tToggle(p, "Round Timer", "roundTimer")
     end
-
     do
         local p = TABS["Флинг"]
         tSection(p, "Цели")
@@ -574,7 +612,6 @@ local function boot()
         tToggle(p, "Anti-Ragdoll", "antiRagdoll")
         tToggle(p, "Anti-AFK", "antiAFK")
     end
-
     do
         local p = TABS["Косметика"]
         tSection(p, "Шляпы")
@@ -586,11 +623,12 @@ local function boot()
         tToggle(p, "Орбита сфер", "cosOrbit")
     end
 
-    -- показываем первую вкладку
     TABS["Движ"].Visible = true
     TabButtons["Движ"].BackgroundColor3 = Color3.fromRGB(90, 60, 160)
 
-    -- ── ОТКРЫТИЕ/ЗАКРЫТИЕ ──────────────────────────────────────
+    -- ═══════════════════════════════════════════════════════════
+    --  ОТКРЫТИЕ/ЗАКРЫТИЕ + ДРАГ + КЛИК
+    -- ═══════════════════════════════════════════════════════════
     local function openWin()
         Win.Visible = true
         Win.Size = UDim2.new(0, 360, 0, 280)
@@ -605,14 +643,58 @@ local function boot()
         task.delay(0.18, function() Win.Visible = false end)
     end
 
-    Orb.InputBegan:Connect(function(i)
-        if i.UserInputType == Enum.UserInputType.MouseButton1 then
-            if Win.Visible then closeWin() else openWin() end
-        end
-    end)
+    -- КЛИК: ловим через InputEnded, но проверяем, что мышь почти не двигалась
+    -- (это спасает от того, что Draggable иногда глушит MouseButton1Click)
+    do
+        local pressPos = nil
+        Btn.InputBegan:Connect(function(i)
+            if i.UserInputType == Enum.UserInputType.MouseButton1
+            or i.UserInputType == Enum.UserInputType.Touch then
+                pressPos = i.Position
+            end
+        end)
+        Btn.InputEnded:Connect(function(i)
+            if i.UserInputType == Enum.UserInputType.MouseButton1
+            or i.UserInputType == Enum.UserInputType.Touch then
+                if pressPos then
+                    local moved = (i.Position - pressPos).Magnitude
+                    if moved < 10 then
+                        if Win.Visible then closeWin() else openWin() end
+                    end
+                    pressPos = nil
+                end
+            end
+        end)
+    end
+
     CloseBtn.MouseButton1Click:Connect(closeWin)
 
-    -- ── ДРАГ / РЕСАЙЗ ───────────────────────────────────────────
+    -- Драг кнопки: считаем дельту мыши, двигаем вручную (чтобы не конфликтовать с кликом)
+    do
+        local dragging, start, startPos = false, nil, nil
+        Btn.InputBegan:Connect(function(i)
+            if i.UserInputType == Enum.UserInputType.MouseButton1
+            or i.UserInputType == Enum.UserInputType.Touch then
+                dragging = true; start = i.Position; startPos = Btn.Position
+            end
+        end)
+        UIS.InputChanged:Connect(function(i)
+            if dragging and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then
+                local d = i.Position - start
+                if d.Magnitude > 4 then
+                    Btn.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + d.X, startPos.Y.Scale, startPos.Y.Offset + d.Y)
+                end
+            end
+        end)
+        UIS.InputEnded:Connect(function(i)
+            if i.UserInputType == Enum.UserInputType.MouseButton1
+            or i.UserInputType == Enum.UserInputType.Touch then
+                dragging = false
+            end
+        end)
+    end
+
+    -- Драг окна за хедер
     do
         local dragging, start, startPos = false, nil, nil
         Head.InputBegan:Connect(function(i)
@@ -629,7 +711,10 @@ local function boot()
         UIS.InputEnded:Connect(function(i)
             if i.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
         end)
+    end
 
+    -- Ресайз окна
+    do
         local rDrag, rStart, rSize = false, nil, nil
         Resize.InputBegan:Connect(function(i)
             if i.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -686,7 +771,7 @@ local function boot()
         return hrp, hum, c
     end
 
-    -- ── ESP ─────────────────────────────────────────────────────
+    -- ESP
     local function ensureEsp(plr)
         if plr == LP then return end
         if espCache[plr] then return espCache[plr] end
@@ -706,26 +791,18 @@ local function boot()
         if e then for _, d in pairs(e) do d:Remove() end; espCache[p] = nil end
     end)
 
-    -- ── CHAMS ───────────────────────────────────────────────────
     local function applyChams(char, color)
         if char:FindFirstChild("__cham") then
-            char.__cham.FillColor = color
-            char.__cham.OutlineColor = color
-            return
+            char.__cham.FillColor = color; char.__cham.OutlineColor = color; return
         end
         local hl = Instance.new("Highlight")
-        hl.Name = "__cham"
-        hl.FillColor = color
-        hl.FillTransparency = 0.55
-        hl.OutlineColor = color
-        hl.Parent = char
+        hl.Name = "__cham"; hl.FillColor = color; hl.FillTransparency = 0.55
+        hl.OutlineColor = color; hl.Parent = char
     end
     local function clearChams(char)
-        local h = char:FindFirstChild("__cham")
-        if h then h:Destroy() end
+        local h = char:FindFirstChild("__cham"); if h then h:Destroy() end
     end
 
-    -- ── ITEM ESP ────────────────────────────────────────────────
     local itemDrawings = {}
     local function clearItemEsp()
         for _, d in pairs(itemDrawings) do
@@ -735,75 +812,59 @@ local function boot()
     end
     local ITEM_NAMES = {"Knife", "Gun", "Coin", "Revolver", "Pistol"}
 
-    -- ── FLY ─────────────────────────────────────────────────────
+    -- FLY
     local function startFly()
         local char = LP.Character
         local hrp = char and char:FindFirstChild("HumanoidRootPart")
         if not hrp then return end
-        flyBV = Instance.new("BodyVelocity")
-        flyBV.MaxForce = Vector3.new(9e9, 9e9, 9e9)
-        flyBV.Velocity = Vector3.zero
-        flyBV.Parent = hrp
-        flyBG = Instance.new("BodyGyro")
-        flyBG.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
-        flyBG.P = 1000
-        flyBG.Parent = hrp
+        flyBV = Instance.new("BodyVelocity"); flyBV.MaxForce = Vector3.new(9e9,9e9,9e9); flyBV.Velocity = Vector3.zero; flyBV.Parent = hrp
+        flyBG = Instance.new("BodyGyro"); flyBG.MaxTorque = Vector3.new(9e9,9e9,9e9); flyBG.P = 1000; flyBG.Parent = hrp
     end
     local function stopFly()
         if flyBV then flyBV:Destroy(); flyBV = nil end
         if flyBG then flyBG:Destroy(); flyBG = nil end
     end
 
-    -- ── FLING ───────────────────────────────────────────────────
+    -- FLING
     local function flingTarget(targetChar, mode)
         if not targetChar then return end
         local hrp = targetChar:FindFirstChild("HumanoidRootPart")
         if not hrp then return end
         if mode == "ForcePush" then
-            local v = Instance.new("BodyVelocity")
-            v.MaxForce = Vector3.new(9e9, 9e9, 9e9)
-            v.Velocity = Vector3.new(math.random(-1,1)*400, 300, math.random(-1,1)*400)
-            v.Parent = hrp
+            local v = Instance.new("BodyVelocity"); v.MaxForce = Vector3.new(9e9,9e9,9e9)
+            v.Velocity = Vector3.new(math.random(-1,1)*400, 300, math.random(-1,1)*400); v.Parent = hrp
             task.delay(0.15, function() v:Destroy() end)
         elseif mode == "Spin" then
             for _ = 1, 4 do
                 hrp.CFrame = hrp.CFrame * CFrame.Angles(math.rad(90), math.rad(90), 0)
-                hrp.Velocity = Vector3.new(0, 500, 0)
-                task.wait(0.03)
+                hrp.Velocity = Vector3.new(0, 500, 0); task.wait(0.03)
             end
         elseif mode == "Loop" then
             for _ = 1, 6 do
-                if hrp.Parent then
-                    hrp.Velocity = Vector3.new(math.random(-350,350), 250, math.random(-350,350))
-                end
+                if hrp.Parent then hrp.Velocity = Vector3.new(math.random(-350,350), 250, math.random(-350,350)) end
                 task.wait(0.1)
             end
         elseif mode == "Silent" then
             local weld = Instance.new("WeldConstraint")
-            weld.Part0 = hrp
-            weld.Part1 = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
+            weld.Part0 = hrp; weld.Part1 = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
             if weld.Part1 then
                 weld.Parent = hrp
                 hrp.CFrame = hrp.CFrame + Vector3.new(0, 0.1, 0)
-                task.wait(0.05)
-                weld:Destroy()
+                task.wait(0.05); weld:Destroy()
                 hrp.Velocity = Vector3.new(300, 400, 300)
             end
         end
     end
 
-    -- ── ANTI-FLING LOOP ─────────────────────────────────────────
+    -- ANTI-FLING
     local savedCFrame = nil
     RunService.Heartbeat:Connect(function()
         local char = LP.Character
         local hrp = char and char:FindFirstChild("HumanoidRootPart")
         if not hrp then return end
-        if S.voidCatch and hrp.Position.Y < -50 then
-            hrp.CFrame = CFrame.new(0, 20, 0); hrp.Velocity = Vector3.zero
-        end
+        if S.voidCatch and hrp.Position.Y < -50 then hrp.CFrame = CFrame.new(0, 20, 0); hrp.Velocity = Vector3.zero end
         if S.antiFling then
-            local v = hrp.Velocity
-            if v.Magnitude > 300 and (hrp.Position - (lastValidPos or hrp.Position)).Magnitude < 5 then
+            if hrp.Velocity.Magnitude > 300 and (hrp.Position - (lastValidPos or hrp.Position)).Magnitude < 5 then
                 hrp.Velocity = Vector3.zero
             end
             lastValidPos = hrp.Position
@@ -814,9 +875,7 @@ local function boot()
             local delta = math.abs(math.deg(ry) - math.deg(select(2, savedCFrame:ToOrientation())))
             if delta > 60 and delta < 300 then
                 hrp.CFrame = CFrame.new(hrp.Position) * CFrame.Angles(0, select(2, savedCFrame:ToOrientation()), 0)
-            else
-                savedCFrame = hrp.CFrame
-            end
+            else savedCFrame = hrp.CFrame end
         end
         if S.weldDetect then
             for _, c in ipairs(hrp:GetChildren()) do
@@ -837,7 +896,7 @@ local function boot()
         end
     end)
 
-    -- ── ANTI-AFK ────────────────────────────────────────────────
+    -- ANTI-AFK
     task.spawn(function()
         while task.wait(60) do
             if S.antiAFK then
@@ -847,20 +906,15 @@ local function boot()
         end
     end)
 
-    -- ── КОСМЕТИКА ───────────────────────────────────────────────
+    -- КОСМЕТИКА
     local function clearCosmetics()
-        for _, p in pairs(cosParts) do
-            if typeof(p) == "Instance" and p.Parent then p:Destroy() end
-        end
+        for _, p in pairs(cosParts) do if typeof(p) == "Instance" and p.Parent then p:Destroy() end end
         cosParts = {}
     end
     local function weldPart(part, target, offset)
         part.CFrame = target.CFrame * offset
-        part.Anchored = false
-        part.CanCollide = false
-        part.Parent = target.Parent
-        local w = Instance.new("WeldConstraint")
-        w.Part0 = part; w.Part1 = target; w.Parent = part
+        part.Anchored = false; part.CanCollide = false; part.Parent = target.Parent
+        local w = Instance.new("WeldConstraint"); w.Part0 = part; w.Part1 = target; w.Parent = part
         return w
     end
     local function buildHat(kind, head)
@@ -868,91 +922,61 @@ local function boot()
         if kind == "Tophat" then
             local brim = Instance.new("Part"); brim.Name="__cos"; brim.Size=Vector3.new(1.4,0.1,1.4); brim.Color=Color3.fromRGB(20,20,20)
             local top = Instance.new("Part"); top.Name="__cos"; top.Size=Vector3.new(0.9,0.9,0.9); top.Color=Color3.fromRGB(20,20,20)
-            weldPart(brim, head, CFrame.new(0,0.55,0))
-            weldPart(top, brim, CFrame.new(0,0.5,0))
+            weldPart(brim, head, CFrame.new(0,0.55,0)); weldPart(top, brim, CFrame.new(0,0.5,0))
             table.insert(cosParts, brim); table.insert(cosParts, top)
         elseif kind == "Crown" then
             local base = Instance.new("Part"); base.Name="__cos"; base.Size=Vector3.new(1.2,0.35,1.2); base.Color=Color3.fromRGB(255,215,60); base.Material=Enum.Material.Neon
-            weldPart(base, head, CFrame.new(0,0.6,0))
-            table.insert(cosParts, base)
+            weldPart(base, head, CFrame.new(0,0.6,0)); table.insert(cosParts, base)
             for i = 1, 5 do
                 local spike = Instance.new("Part"); spike.Name="__cos"; spike.Size=Vector3.new(0.15,0.4,0.15); spike.Color=Color3.fromRGB(255,235,120); spike.Material=Enum.Material.Neon
                 local ang = (i-1)*(math.pi*2/5)
-                weldPart(spike, base, CFrame.new(math.cos(ang)*0.5, 0.3, math.sin(ang)*0.5))
-                table.insert(cosParts, spike)
+                weldPart(spike, base, CFrame.new(math.cos(ang)*0.5, 0.3, math.sin(ang)*0.5)); table.insert(cosParts, spike)
             end
         elseif kind == "Halo" then
             local halo = Instance.new("Part"); halo.Name="__cos"; halo.Shape=Enum.PartType.Cylinder; halo.Size=Vector3.new(0.15,1.4,1.4); halo.Color=Color3.fromRGB(255,240,160); halo.Material=Enum.Material.Neon
-            weldPart(halo, head, CFrame.new(0,1.2,0))
-            table.insert(cosParts, halo)
+            weldPart(halo, head, CFrame.new(0,1.2,0)); table.insert(cosParts, halo)
         elseif kind == "Propeller" then
             local cap = Instance.new("Part"); cap.Name="__cos"; cap.Size=Vector3.new(0.9,0.3,0.9); cap.Color=Color3.fromRGB(30,120,220)
-            weldPart(cap, head, CFrame.new(0,0.55,0))
-            table.insert(cosParts, cap)
+            weldPart(cap, head, CFrame.new(0,0.55,0)); table.insert(cosParts, cap)
             local blade = Instance.new("Part"); blade.Name="__cos"; blade.Size=Vector3.new(1.4,0.1,0.2); blade.Color=Color3.fromRGB(220,60,60)
-            weldPart(blade, cap, CFrame.new(0,0.25,0))
-            table.insert(cosParts, blade)
+            weldPart(blade, cap, CFrame.new(0,0.25,0)); table.insert(cosParts, blade)
             RunService.Heartbeat:Connect(function()
-                if blade and blade.Parent then
-                    blade.CFrame = blade.CFrame * CFrame.Angles(0, math.rad(18), 0)
-                end
+                if blade and blade.Parent then blade.CFrame = blade.CFrame * CFrame.Angles(0, math.rad(18), 0) end
             end)
         elseif kind == "Bucket" then
             local bucket = Instance.new("Part"); bucket.Name="__cos"; bucket.Shape=Enum.PartType.Cylinder; bucket.Size=Vector3.new(0.9,1.0,1.0); bucket.Color=Color3.fromRGB(140,140,150); bucket.Material=Enum.Material.Metal
-            weldPart(bucket, head, CFrame.new(0,1.0,0) * CFrame.Angles(0,0,math.rad(90)))
-            table.insert(cosParts, bucket)
+            weldPart(bucket, head, CFrame.new(0,1.0,0) * CFrame.Angles(0,0,math.rad(90))); table.insert(cosParts, bucket)
         end
     end
     local function buildWings(back)
         local function wp(off, rot)
             local p = Instance.new("Part"); p.Name="__cos"; p.Size=Vector3.new(1.4,0.1,0.6); p.Color=Color3.fromRGB(240,240,255); p.Material=Enum.Material.Neon; p.Transparency=0.15
-            weldPart(p, back, off * rot)
-            table.insert(cosParts, p)
+            weldPart(p, back, off * rot); table.insert(cosParts, p)
         end
         wp(CFrame.new(-0.9,0.2,0.3), CFrame.Angles(0,0,math.rad(25)))
         wp(CFrame.new( 0.9,0.2,0.3), CFrame.Angles(0,0,math.rad(-25)))
         wp(CFrame.new(-1.6,-0.2,0.5), CFrame.Angles(0,0,math.rad(45)))
         wp(CFrame.new( 1.6,-0.2,0.5), CFrame.Angles(0,0,math.rad(-45)))
     end
-    local AURA = {
-        Fire = Color3.fromRGB(255,110,40), Ice = Color3.fromRGB(120,200,255),
-        Lightning = Color3.fromRGB(255,240,120), Galaxy = Color3.fromRGB(180,100,255),
-        Gold = Color3.fromRGB(255,210,80),
-    }
+    local AURA = {Fire=Color3.fromRGB(255,110,40),Ice=Color3.fromRGB(120,200,255),Lightning=Color3.fromRGB(255,240,120),Galaxy=Color3.fromRGB(180,100,255),Gold=Color3.fromRGB(255,210,80)}
     local function applyAura(kind, hrp)
         if kind == "None" or not AURA[kind] then return end
         local att = Instance.new("Attachment", hrp); att.Name="__cos"
         local em = Instance.new("ParticleEmitter")
         em.Texture = "rbxasset://textures/particles/sparkles_main.dds"
-        em.Rate = 18; em.Lifetime = NumberRange.new(1.2, 2.0)
-        em.Speed = NumberRange.new(4, 10)
+        em.Rate = 18; em.Lifetime = NumberRange.new(1.2, 2.0); em.Speed = NumberRange.new(4, 10)
         em.SpreadAngle = Vector2.new(180, 180)
-        em.Size = NumberSequence.new({
-            NumberSequenceKeypoint.new(0, 0),
-            NumberSequenceKeypoint.new(0.5, 0.6),
-            NumberSequenceKeypoint.new(1, 0),
-        })
-        em.Transparency = NumberSequence.new({
-            NumberSequenceKeypoint.new(0, 0.2),
-            NumberSequenceKeypoint.new(1, 1),
-        })
-        em.Color = ColorSequence.new(AURA[kind])
-        em.Parent = att
+        em.Size = NumberSequence.new({NumberSequenceKeypoint.new(0,0),NumberSequenceKeypoint.new(0.5,0.6),NumberSequenceKeypoint.new(1,0)})
+        em.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0,0.2),NumberSequenceKeypoint.new(1,1)})
+        em.Color = ColorSequence.new(AURA[kind]); em.Parent = att
         table.insert(cosParts, att)
     end
     local function applyTrail(hrp)
         local a0 = Instance.new("Attachment", hrp); a0.Name="__cos"; a0.Position=Vector3.new(-0.5,0,0)
         local a1 = Instance.new("Attachment", hrp); a1.Name="__cos"; a1.Position=Vector3.new(0.5,0,0)
-        local tr = Instance.new("Trail")
-        tr.Attachment0=a0; tr.Attachment1=a1; tr.Lifetime=1.2
-        tr.Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, Color3.fromRGB(180,90,255)),
-            ColorSequenceKeypoint.new(1, Color3.fromRGB(255,90,180)),
-        })
-        tr.Transparency = NumberSequence.new({
-            NumberSequenceKeypoint.new(0, 0.2),
-            NumberSequenceKeypoint.new(1, 1),
-        })
+        local tr = Instance.new("Trail"); tr.Attachment0=a0; tr.Attachment1=a1; tr.Lifetime=1.2
+        tr.Color = ColorSequence.new({ColorSequenceKeypoint.new(0,Color3.fromRGB(180,90,255)),ColorSequenceKeypoint.new(1,Color3.fromRGB(255,90,180))})
+        tr.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0,0.2),NumberSequenceKeypoint.new(1,1)})
         tr.Parent = hrp
         table.insert(cosParts, a0); table.insert(cosParts, a1); table.insert(cosParts, tr)
     end
@@ -995,19 +1019,14 @@ local function boot()
     task.spawn(function()
         while task.wait(0.5) do
             local key = tostring(S.cosHat)..tostring(S.cosWings)..tostring(S.cosAura)..tostring(S.cosTrail)..tostring(S.cosOrbit)..tostring(LP.Character)
-            if key ~= lastCosKey then
-                lastCosKey = key
-                rebuildCosmetics()
-            end
+            if key ~= lastCosKey then lastCosKey = key; rebuildCosmetics() end
         end
     end)
 
-    -- ── МИР ─────────────────────────────────────────────────────
+    -- МИР
     local function ensureFx(name, class)
         local e = Lighting:FindFirstChild(name)
-        if not e then
-            e = Instance.new(class); e.Name = name; e.Parent = Lighting
-        end
+        if not e then e = Instance.new(class); e.Name = name; e.Parent = Lighting end
         return e
     end
     local Blur    = ensureFx("__mm2_blur", "BlurEffect"); Blur.Size = 6
@@ -1029,7 +1048,7 @@ local function boot()
         SunRays.Enabled = S.worldSunRays
     end
 
-    -- ── MAIN LOOP ───────────────────────────────────────────────
+    -- MAIN LOOP
     task.spawn(function()
         while task.wait() do
             local char = LP.Character
@@ -1070,10 +1089,8 @@ local function boot()
                 Lighting.Brightness = math.max(Lighting.Brightness, 3)
                 Lighting.Ambient = Color3.fromRGB(200,200,200)
             end
-
             updateWorld()
 
-            -- ESP
             for _, plr in ipairs(Players:GetPlayers()) do
                 if plr ~= LP then
                     local parts = getCharParts(plr)
@@ -1090,8 +1107,7 @@ local function boot()
                             local bot, bOn = CAM:WorldToViewportPoint(bottomPos)
                             if tOn and bOn then
                                 local h = math.abs(bot.Y - top.Y); local w = h/2
-                                esp.box.Size = Vector2.new(w, h)
-                                esp.box.Position = Vector2.new(top.X - w/2, top.Y)
+                                esp.box.Size = Vector2.new(w, h); esp.box.Position = Vector2.new(top.X - w/2, top.Y)
                                 esp.box.Color = color; esp.box.Visible = true
                                 local dist = hrp and (hrp2.Position - hrp.Position).Magnitude or 0
                                 esp.name.Text = plr.Name .. "  [" .. math.floor(dist) .. "m]"
@@ -1111,7 +1127,6 @@ local function boot()
                 end
             end
 
-            -- ITEM ESP
             if S.itemESP then
                 for _, obj in ipairs(Workspace:GetDescendants()) do
                     if obj:IsA("BasePart") then
@@ -1130,11 +1145,8 @@ local function boot()
                         end
                     end
                 end
-            elseif next(itemDrawings) then
-                clearItemEsp()
-            end
+            elseif next(itemDrawings) then clearItemEsp() end
 
-            -- AIM
             if S.aimbot or S.silentAim then
                 local closest, cd = nil, math.huge
                 for _, plr in ipairs(Players:GetPlayers()) do
@@ -1156,16 +1168,13 @@ local function boot()
                     if S.aimbot and UIS:IsMouseButtonPressed(S.aimKey) then
                         CAM.CFrame = CFrame.new(CAM.CFrame.Position, closest.Position)
                     end
-                    if S.silentAim then
-                        CAM.CFrame = CFrame.new(CAM.CFrame.Position, closest.Position)
-                    end
+                    if S.silentAim then CAM.CFrame = CFrame.new(CAM.CFrame.Position, closest.Position) end
                     if S.autoShoot then
                         pcall(function() game:GetService("VirtualInputManager"):SendMouseButtonEvent(0,0,0,true,game,0) end)
                     end
                 end
             end
 
-            -- DODGE
             if S.autoDodge and hrp then
                 for _, plr in ipairs(Players:GetPlayers()) do
                     if plr ~= LP and getRole(plr) == "Murderer" then
@@ -1177,7 +1186,6 @@ local function boot()
                 end
             end
 
-            -- COIN
             if S.autoCoins or S.coinVacuum or S.autoPickup then
                 for _, obj in ipairs(Workspace:GetDescendants()) do
                     if obj:IsA("BasePart") and obj.Parent and hrp then
@@ -1193,7 +1201,6 @@ local function boot()
                 end
             end
 
-            -- AUTO EQUIP GUN
             if S.autoEquipGun and char then
                 if not char:FindFirstChildOfClass("Tool") then
                     local backpack = LP:FindFirstChild("Backpack")
@@ -1207,7 +1214,6 @@ local function boot()
                 end
             end
 
-            -- FLING
             if S.flingMurder or S.flingSheriff then
                 for _, plr in ipairs(Players:GetPlayers()) do
                     if plr ~= LP then
@@ -1223,7 +1229,7 @@ local function boot()
         end
     end)
 
-    -- ── INFO PANEL ──────────────────────────────────────────────
+    -- INFO PANEL
     local InfoPanel = Instance.new("Frame")
     InfoPanel.Size = UDim2.new(0, 210, 0, 26)
     InfoPanel.Position = UDim2.new(0, 60, 0, 340)
@@ -1253,20 +1259,17 @@ local function boot()
                 local t = Workspace:GetAttribute("RoundTime") or "—"
                 lines[#lines+1] = "Round: " .. tostring(t)
             end
-            if S.playerList then
-                lines[#lines+1] = "Игроки: " .. tostring(#Players:GetPlayers())
-            end
+            if S.playerList then lines[#lines+1] = "Игроки: " .. tostring(#Players:GetPlayers()) end
             InfoLabel.Text = table.concat(lines, "  ·  ")
             InfoPanel.Visible = #lines > 0
             InfoPanel.Size = UDim2.new(0, 120 + #InfoLabel.Text * 5, 0, 26)
         end
     end)
 
-    print("[MM2 Suite v2.1] OK. Орб 'ENI' слева. Клик — открыть меню.")
+    print("[nameless MM2 v2.2] OK. Кнопка 'nameless' слева. Клик — открыть.")
 end
 
--- Запуск с ловлей ошибок
 local ok, err = pcall(boot)
 if not ok then
-    warn("[MM2 Suite v2.1] Ошибка при запуске: " .. tostring(err))
+    warn("[nameless MM2 v2.2] Ошибка: " .. tostring(err))
 end
