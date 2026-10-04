@@ -188,6 +188,7 @@ function Utility:GetGui()
     gui = Instance.new("ScreenGui")
     gui.Name = "ENI_MM2_Suite"
     gui.ResetOnSpawn = false
+    gui.IgnoreGuiInset = true
     gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     gui.DisplayOrder = 9999
     pcall(function() gui.Parent = CoreGui end)
@@ -217,8 +218,8 @@ function Library:CreateWindow(config)
     -- Main container
     local MainFrame = Instance.new("Frame")
     MainFrame.Name = "MainFrame"
-    MainFrame.Size = UDim2.new(0, 620, 0, 420)
-    MainFrame.Position = UDim2.new(0.5, -310, 0.5, -210)
+    MainFrame.Size = UDim2.new(0, 520, 0, 350)
+    MainFrame.Position = UDim2.new(0.5, -260, 0.5, -175)
     MainFrame.BackgroundColor3 = Theme.Background
     MainFrame.BackgroundTransparency = 0.02
     MainFrame.BorderSizePixel = 0
@@ -306,7 +307,7 @@ function Library:CreateWindow(config)
         Utility:Tween(CloseBtn, { BackgroundColor3 = Theme.Panel, BackgroundTransparency = 0.5, TextColor3 = Theme.TextDim }, TI_Quick)
     end)
     CloseBtn.MouseButton1Click:Connect(function()
-        Utility:Tween(MainFrame, { Size = UDim2.new(0, 620, 0, 0) }, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.In))
+        Utility:Tween(MainFrame, { Size = UDim2.new(0, 520, 0, 0) }, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.In))
         task.wait(0.35)
         MainFrame.Visible = false
         self:ShowMinimized(gui, MainFrame)
@@ -334,7 +335,7 @@ function Library:CreateWindow(config)
         Utility:Tween(MinBtn, { BackgroundColor3 = Theme.Panel, BackgroundTransparency = 0.5, TextColor3 = Theme.TextDim }, TI_Quick)
     end)
     MinBtn.MouseButton1Click:Connect(function()
-        Utility:Tween(MainFrame, { Size = UDim2.new(0, 620, 0, 0) }, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.In))
+        Utility:Tween(MainFrame, { Size = UDim2.new(0, 520, 0, 0) }, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.In))
         task.wait(0.35)
         MainFrame.Visible = false
         self:ShowMinimized(gui, MainFrame)
@@ -382,9 +383,9 @@ function Library:CreateWindow(config)
     Utility:Draggable(MainFrame, TitleBar)
     
     -- Open animation
-    MainFrame.Size = UDim2.new(0, 620, 0, 0)
+    MainFrame.Size = UDim2.new(0, 520, 0, 0)
     MainFrame.Visible = true
-    Utility:Tween(MainFrame, { Size = UDim2.new(0, 620, 0, 420) }, TI_Bounce)
+    Utility:Tween(MainFrame, { Size = UDim2.new(0, 520, 0, 350) }, TI_Bounce)
     
     WindowObj = {
         Gui = gui,
@@ -447,7 +448,7 @@ function Library:ShowMinimized(gui, mainFrame)
         task.wait(0.25)
         MinBtn:Destroy()
         mainFrame.Visible = true
-        Utility:Tween(mainFrame, { Size = UDim2.new(0, 620, 0, 420) }, TI_Bounce)
+        Utility:Tween(mainFrame, { Size = UDim2.new(0, 520, 0, 350) }, TI_Bounce)
     end)
 end
 
@@ -1108,18 +1109,130 @@ local function getHRP(p) local c = getChar(p) return c and c:FindFirstChild("Hum
 local function getHum(p) local c = getChar(p) return c and c:FindFirstChildOfClass("Humanoid") end
 local function isAlive(p) local h = getHum(p) return h and h.Health > 0 end
 
+local function normalizeRole(value)
+    if value == nil then return nil end
+    local s = tostring(value):lower():gsub("%s+", "")
+    if s == "murderer" or s == "murder" or s == "killer" then return "Murderer" end
+    if s == "sheriff" or s == "detective" then return "Sheriff" end
+    if s == "innocent" or s == "civilian" then return "Innocent" end
+    return nil
+end
+
 local function getRole(player)
+    if not player then return "Innocent" end
+
+    -- Custom-mode friendly: attributes are checked first.
+    for _, key in ipairs({"Role", "PlayerRole", "MM2Role", "RoundRole"}) do
+        local role = normalizeRole(player:GetAttribute(key))
+        if role then return role end
+    end
+
+    -- Then StringValue/BoolValue role markers.
+    for _, key in ipairs({"Role", "PlayerRole", "MM2Role"}) do
+        local v = player:FindFirstChild(key)
+        if v and v:IsA("StringValue") then
+            local role = normalizeRole(v.Value)
+            if role then return role end
+        end
+    end
+    local murdererFlag = player:FindFirstChild("Murderer")
+    if murdererFlag and murdererFlag:IsA("BoolValue") and murdererFlag.Value then
+        return "Murderer"
+    end
+    local sheriffFlag = player:FindFirstChild("Sheriff")
+    if sheriffFlag and sheriffFlag:IsA("BoolValue") and sheriffFlag.Value then
+        return "Sheriff"
+    end
+
+    -- Finally fall back to role-specific tools.
     local backpack = player:FindFirstChild("Backpack")
-    if backpack then
-        if backpack:FindFirstChild("Knife") then return "Murderer" end
-        if backpack:FindFirstChild("Gun") or backpack:FindFirstChild("Revolver") then return "Sheriff" end
-    end
     local char = getChar(player)
-    if char then
-        if char:FindFirstChild("Knife") then return "Murderer" end
-        if char:FindFirstChild("Gun") or char:FindFirstChild("Revolver") then return "Sheriff" end
+    local containers = {char, backpack}
+
+    for _, container in ipairs(containers) do
+        if container then
+            for _, obj in ipairs(container:GetChildren()) do
+                local n = obj.Name:lower()
+                if n:find("knife") or n:find("murder") then
+                    return "Murderer"
+                end
+            end
+        end
     end
+
+    for _, container in ipairs(containers) do
+        if container then
+            for _, obj in ipairs(container:GetChildren()) do
+                local n = obj.Name:lower()
+                if n:find("revolver") or n == "gun" or n:find("sheriff") then
+                    return "Sheriff"
+                end
+            end
+        end
+    end
+
+    -- Team names are a useful fallback for custom modes.
+    if player.Team then
+        local role = normalizeRole(player.Team.Name)
+        if role then return role end
+    end
+
     return "Innocent"
+end
+
+local function findGun(player)
+    if not player then return nil end
+    local char = getChar(player)
+    local backpack = player:FindFirstChild("Backpack")
+    local containers = {char, backpack}
+    for _, container in ipairs(containers) do
+        if container then
+            for _, obj in ipairs(container:GetChildren()) do
+                if obj:IsA("Tool") then
+                    local n = obj.Name:lower()
+                    if n == "gun" or n == "revolver" or n:find("sheriff") or n:find("pistol") then
+                        return obj
+                    end
+                end
+            end
+        end
+    end
+    return nil
+end
+
+local function fireGun(tool, targetPosition)
+    if not tool then return false end
+    local fired = false
+
+    -- Prefer the custom remote if the weapon exposes one.
+    local remoteNames = {"ShootEvent", "Shoot", "Fire", "FireEvent"}
+    for _, name in ipairs(remoteNames) do
+        local remote = tool:FindFirstChild(name) or ReplicatedStorage:FindFirstChild(name)
+        if remote then
+            local ok = pcall(function()
+                if remote:IsA("RemoteEvent") then
+                    remote:FireServer(targetPosition)
+                    return true
+                elseif remote:IsA("RemoteFunction") then
+                    remote:InvokeServer(targetPosition)
+                    return true
+                end
+            end)
+            if ok then fired = true break end
+        end
+    end
+
+    -- Also activate the Tool so modes using Tool.Activated continue to work.
+    pcall(function()
+        if tool.Parent ~= getChar(LocalPlayer) then
+            local char = getChar(LocalPlayer)
+            if char then tool.Parent = char end
+        end
+        tool:Activate()
+        fired = true
+    end)
+
+    return fired
 end
 
 -- ── SpeedHack ──────────────────────────────────────────────────────────────
@@ -1250,6 +1363,19 @@ function Features.ESP:Toggle(state)
                 dl.TextStrokeTransparency = 0.5
                 dl.ZIndex = 2
                 dl.Parent = bb
+                local roleConn = task.spawn(function()
+                    while self.enabled and char and char.Parent and hum.Health > 0 and bb and bb.Parent do
+                        local liveRole = getRole(player)
+                        local liveColor = liveRole == "Murderer" and Color3.fromRGB(255, 60, 60)
+                            or liveRole == "Sheriff" and Color3.fromRGB(60, 120, 255)
+                            or Color3.fromRGB(80, 210, 120)
+                        hl.FillColor = liveColor
+                        hl.OutlineColor = liveColor
+                        nl.Text = player.DisplayName .. " [" .. liveRole .. "]"
+                        task.wait(0.5)
+                    end
+                end)
+
                 local conn = RunService.RenderStepped:Connect(function()
                     if not self.enabled or not char or not char.Parent or hum.Health <= 0 then
                         if conn then conn:Disconnect() end
@@ -1456,19 +1582,13 @@ function Features.AutoShoot:Toggle(state)
     if state then
         self.conn = task.spawn(function()
             while self.enabled do
-                local char = getChar(LocalPlayer)
-                local tool = char and (char:FindFirstChild("Gun") or char:FindFirstChild("Revolver"))
-                if not tool then
-                    local bp = LocalPlayer:FindFirstChild("Backpack")
-                    tool = bp and (bp:FindFirstChild("Gun") or bp:FindFirstChild("Revolver"))
-                    if tool and char then tool.Parent = char end
-                end
+                local tool = findGun(LocalPlayer)
                 if tool then
-                    local closest, cd = nil, 1000
+                    local closest, cd = nil, math.huge
                     local lhrp = getHRP(LocalPlayer)
                     if lhrp then
                         for _, p in ipairs(Players:GetPlayers()) do
-                            if p ~= LocalPlayer and isAlive(p) then
+                            if p ~= LocalPlayer and isAlive(p) and getRole(p) == "Murderer" then
                                 local phrp = getHRP(p)
                                 if phrp then
                                     local d = (phrp.Position - lhrp.Position).Magnitude
@@ -1477,25 +1597,23 @@ function Features.AutoShoot:Toggle(state)
                             end
                         end
                     end
+
                     if closest then
-                        local tp = getChar(closest) and getChar(closest):FindFirstChild("Head")
-                        if tp then
-                            local se = ReplicatedStorage:FindFirstChild("ShootEvent") or tool:FindFirstChild("Shoot") or tool:FindFirstChild("Fire")
-                            if se then
-                                pcall(function()
-                                    if se:IsA("RemoteEvent") then se:FireServer(tp.Position)
-                                    elseif se:IsA("RemoteFunction") then se:InvokeServer(tp.Position) end
-                                end)
-                            end
-                            pcall(function() tool:Activate() end)
+                        local targetChar = getChar(closest)
+                        local head = targetChar and targetChar:FindFirstChild("Head")
+                        if head then
+                            fireGun(tool, head.Position)
                         end
                     end
                 end
-                task.wait(self.delay)
+                task.wait(math.max(0.05, self.delay))
             end
         end)
     else
-        if self.conn then task.cancel(self.conn) self.conn = nil end
+        if self.conn then
+            task.cancel(self.conn)
+            self.conn = nil
+        end
     end
 end
 
@@ -1955,10 +2073,12 @@ function Features.Crosshair:Toggle(state)
         if self.frame then self.frame:Destroy() end
         local gui = WindowObj.Gui
         local c = Instance.new("Frame")
+        c.Name = "ENI_Crosshair"
+        c.AnchorPoint = Vector2.new(0.5, 0.5)
         c.Size = UDim2.new(0, 40, 0, 40)
-        c.Position = UDim2.new(0.5, -20, 0.5, -20)
+        c.Position = UDim2.fromScale(0.5, 0.5)
         c.BackgroundTransparency = 1
-        c.ZIndex = 30
+        c.ZIndex = 100
         c.Parent = gui
         local function line(sx, sy, px, py)
             local l = Instance.new("Frame")
@@ -2069,38 +2189,34 @@ function Features.ShootMurderBtn:Toggle(state)
         btn.MouseButton1Click:Connect(function()
             local murder, md = nil, math.huge
             local lhrp = getHRP(LocalPlayer)
+
             for _, p in ipairs(Players:GetPlayers()) do
-                if p ~= LocalPlayer and getRole(p) == "Murderer" and isAlive(p) then
+                if p ~= LocalPlayer and isAlive(p) and getRole(p) == "Murderer" then
                     local ph = getHRP(p)
                     if ph and lhrp then
                         local d = (ph.Position - lhrp.Position).Magnitude
-                        if d < md then md = d murder = p end
+                        if d < md then
+                            md = d
+                            murder = p
+                        end
                     end
                 end
             end
-            if murder then
-                local char = getChar(LocalPlayer)
-                local tool = char and (char:FindFirstChild("Gun") or char:FindFirstChild("Revolver"))
-                if not tool then
-                    local bp = LocalPlayer:FindFirstChild("Backpack")
-                    tool = bp and (bp:FindFirstChild("Gun") or bp:FindFirstChild("Revolver"))
-                    if tool and char then tool.Parent = char end
+
+            if not murder then
+                return
+            end
+
+            local tool = findGun(LocalPlayer)
+            local targetChar = getChar(murder)
+            local head = targetChar and targetChar:FindFirstChild("Head")
+            if tool and head then
+                local lhrp2 = getHRP(LocalPlayer)
+                if lhrp2 then
+                    lhrp2.CFrame = CFrame.new(lhrp2.Position, head.Position)
                 end
-                if tool then
-                    local tp = getChar(murder) and getChar(murder):FindFirstChild("Head")
-                    if tp then
-                        local lhrp2 = getHRP(LocalPlayer)
-                        if lhrp2 then lhrp2.CFrame = CFrame.new(lhrp2.Position, tp.Position) end
-                        Camera.CFrame = CFrame.new(Camera.CFrame.Position, tp.Position)
-                        local se = ReplicatedStorage:FindFirstChild("ShootEvent") or tool:FindFirstChild("Shoot") or tool:FindFirstChild("Fire")
-                        if se then
-                            pcall(function()
-                                if se:IsA("RemoteEvent") then se:FireServer(tp.Position) end
-                            end)
-                        end
-                        pcall(function() tool:Activate() end)
-                    end
-                end
+                Camera.CFrame = CFrame.new(Camera.CFrame.Position, head.Position)
+                fireGun(tool, head.Position)
             end
         end)
         self.btn = btn
@@ -2115,7 +2231,7 @@ end
 
 local Window = Library:CreateWindow({
     Title = "ENI MM2",
-    Subtitle = "Premium Suite v2.1",
+    Subtitle = "Premium Suite v2.2",
 })
 
 -- ── Combat Tab ──────────────────────────────────────────────────────────────
@@ -2454,7 +2570,7 @@ UserInputService.InputBegan:Connect(function(input, gpe)
     if gpe then return end
     if input.KeyCode == Enum.KeyCode.RightShift then
         if Window.Frame.Visible then
-            Utility:Tween(Window.Frame, { Size = UDim2.new(0, 620, 0, 0) }, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.In))
+            Utility:Tween(Window.Frame, { Size = UDim2.new(0, 520, 0, 0) }, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.In))
             task.wait(0.35)
             Window.Frame.Visible = false
             Library:ShowMinimized(Window.Gui, Window.Frame)
@@ -2466,9 +2582,9 @@ UserInputService.InputBegan:Connect(function(input, gpe)
                 min:Destroy()
             end
             Window.Frame.Visible = true
-            Utility:Tween(Window.Frame, { Size = UDim2.new(0, 620, 0, 420) }, TI_Bounce)
+            Utility:Tween(Window.Frame, { Size = UDim2.new(0, 520, 0, 350) }, TI_Bounce)
         end
     end
 end)
 
-print("[ENI MM2] v2.2 loaded — CreateTab bridge + GUI rendering fixes applied.")
+print("[ENI MM2] v2.3 loaded — GUI, crosshair, role detection and weapon hooks updated.")
