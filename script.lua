@@ -396,6 +396,14 @@ function Library:CreateWindow(config)
         ActiveTab = nil,
     }
     
+    -- Expose CreateTab on the returned Window object.
+    -- The build section calls Window:CreateTab(...), while the factory
+    -- implementation lives on Library. Without this bridge, the script
+    -- stops before the first tab is created and the GUI appears empty.
+    function WindowObj:CreateTab(name, iconId)
+        return Library:CreateTab(self, name, iconId)
+    end
+
     self._window = WindowObj
     return WindowObj
 end
@@ -2463,4 +2471,4 @@ UserInputService.InputBegan:Connect(function(input, gpe)
     end
 end)
 
-print("[ENI MM2] v2.1 loaded — all tabs should now display content properly.")
+print("[ENI MM2] v2.2 loaded — CreateTab bridge + GUI rendering fixes applied.")
