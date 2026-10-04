@@ -131,19 +131,20 @@ function Utility:UpdateCanvas(scrollFrame)
     if not scrollFrame or not scrollFrame:IsA("ScrollingFrame") then return end
     local layout = scrollFrame:FindFirstChildOfClass("UIListLayout")
     if not layout then return end
-    task.spawn(function()
-        -- Wait a frame for layout to settle
+
+    task.defer(function()
         RunService.Heartbeat:Wait()
-        local totalHeight = 0
+
         local pad = scrollFrame:FindFirstChildOfClass("UIPadding")
         local padTop = pad and pad.PaddingTop.Offset or 0
         local padBottom = pad and pad.PaddingBottom.Offset or 0
-        for _, child in ipairs(scrollFrame:GetChildren()) do
-            if child:IsA("GuiObject") and child ~= layout then
-                totalHeight = totalHeight + child.AbsoluteSize.Y + layout.Padding.Offset
-            end
-        end
-        scrollFrame.CanvasSize = UDim2.new(0, 0, 0, totalHeight + padTop + padBottom)
+
+        -- UIListLayout already calculates the exact content height.
+        local contentHeight = layout.AbsoluteContentSize.Y
+        scrollFrame.CanvasSize = UDim2.new(
+            0, 0,
+            0, math.max(contentHeight + padTop + padBottom, scrollFrame.AbsoluteSize.Y)
+        )
     end)
 end
 
@@ -606,7 +607,7 @@ function Library:CreateTab(window, name, iconId)
         Line.Position = UDim2.new(0, 0, 0.5, 0)
         Line.BackgroundColor3 = Theme.Border
         Line.BorderSizePixel = 0
-        Line.Transparency = 0.5
+        Line.BackgroundTransparency = 0.5
         Line.ZIndex = 13
         Line.Parent = Container
         
@@ -2415,6 +2416,15 @@ SettingsTab:CreateButton({
 -- ★ FIX: Force update all canvases after building
 task.spawn(function()
     task.wait(0.1)
+    for _, tab in ipairs(Window.Tabs) do
+        Utility:UpdateCanvas(tab.PageScroll)
+    end
+    Utility:UpdateCanvas(Window.SidebarScroll)
+end)
+
+-- ★ Final layout refresh: let Roblox calculate all UIListLayouts first.
+task.defer(function()
+    RunService.Heartbeat:Wait()
     for _, tab in ipairs(Window.Tabs) do
         Utility:UpdateCanvas(tab.PageScroll)
     end
