@@ -1,11 +1,6 @@
 --[[
-    ╔═══════════════════════════════════════════════════════════╗
-    ║         DELTA X — MM2 HUB · MONOCHROME EDITION             ║
-    ║                    Built for LO                              ║
-    ║         "black like the coffee I forgot to drink"          ║
-    ╚═══════════════════════════════════════════════════════════╝
-    Compact 300×360 · B&W palette · Animated · Mobile-native
-    Toggle bar: small pill at top of screen, tap to open/close
+    DELTA X — MM2 HUB · MONOCHROME EDITION (FIXED)
+    For LO · "the coffee went cold but I'm still here"
 ]]
 
 --=========================== SERVICES ===============================--
@@ -28,21 +23,13 @@ local Camera      = Workspace.CurrentCamera
 
 --========================= MONOCHROME ===============================--
 local C = {
-    Black     = Color3.fromRGB(8, 8, 10),
-    DarkBg    = Color3.fromRGB(12, 12, 14),
-    Sidebar   = Color3.fromRGB(15, 15, 17),
-    Element   = Color3.fromRGB(21, 21, 24),
-    Hover     = Color3.fromRGB(30, 30, 34),
-    ToggleOff = Color3.fromRGB(33, 33, 38),
-    Subtext   = Color3.fromRGB(85, 85, 90),
-    OffWhite  = Color3.fromRGB(165, 165, 170),
-    Text      = Color3.fromRGB(235, 235, 238),
-    Accent    = Color3.fromRGB(255, 255, 255),
-    KnobOff   = Color3.fromRGB(115, 115, 120),
-    KnobOn    = Color3.fromRGB(12, 12, 12),
-    Stroke    = Color3.fromRGB(45, 45, 50),
-    Safe      = Color3.fromRGB(50, 50, 55),
-    Danger    = Color3.fromRGB(255, 255, 255),
+    Black=Color3.fromRGB(8,8,10), DarkBg=Color3.fromRGB(12,12,14),
+    Sidebar=Color3.fromRGB(15,15,17), Element=Color3.fromRGB(21,21,24),
+    Hover=Color3.fromRGB(30,30,34), ToggleOff=Color3.fromRGB(33,33,38),
+    Subtext=Color3.fromRGB(85,85,90), OffWhite=Color3.fromRGB(165,165,170),
+    Text=Color3.fromRGB(235,235,238), Accent=Color3.fromRGB(255,255,255),
+    KnobOff=Color3.fromRGB(115,115,120), KnobOn=Color3.fromRGB(12,12,12),
+    Stroke=Color3.fromRGB(45,45,50), Safe=Color3.fromRGB(50,50,55),
 }
 
 --=========================== CONFIG =================================--
@@ -52,21 +39,17 @@ local Config = {
     PlayerESP=false, RoleESP=false, Chams=false, ItemESP=false, FullBright=false,
     TimeOfDay=14, Brightness=2, FogEnd=100000,
     AimBot=false, SilentAim=false, AutoShoot=false, GodMode=false, AutoDodge=false,
-    AutoCoins=false, AutoWeapon=false,
-    FlingMode="ForcePush",
-    AntiFling=false, VoidCatch=false, AntiSpin=false, WeldDetector=false, AntiRagdoll=false, AntiAFK=false,
-    BGTransparency=0.05, SoundEnabled=true,
+    AutoCoins=false, AutoWeapon=false, FlingMode="ForcePush",
+    AntiFling=false, VoidCatch=false, AntiSpin=false, WeldDetector=false,
+    AntiRagdoll=false, AntiAFK=false, BGTransparency=0.05, SoundEnabled=true,
 }
 
 --============================ STATE =================================--
 local State = {
     ESPDrawings={}, ChamsHighlights={}, ItemESPGuis={},
-    FlyVelocity=nil, FlyGyro=nil,
-    LastSafePosition=Vector3.new(0,50,0),
+    FlyVelocity=nil, FlyGyro=nil, LastSafePosition=Vector3.new(0,50,0),
     FPSCounter=0, FPSFrames=0, LastFPSUpdate=tick(),
-    FlingLoopRunning=false,
-    GUIVisible=true,
-    FlyUp=false, FlyDown=false,
+    FlingLoopRunning=false, GUIVisible=true, FlyUp=false, FlyDown=false,
 }
 
 --========================== DIMENSIONS =============================--
@@ -78,11 +61,10 @@ local BAR_H = 22
 
 --======================== ROLE DETECTION ===========================--
 local RoleColors = {
-    Murderer = Color3.fromRGB(255, 60, 60),
-    Sheriff  = Color3.fromRGB(80, 140, 255),
-    Innocent = Color3.fromRGB(100, 220, 100),
+    Murderer=Color3.fromRGB(255,60,60), Sheriff=Color3.fromRGB(80,140,255),
+    Innocent=Color3.fromRGB(100,220,100),
 }
-local RoleLabels = { Murderer="Murderer", Sheriff="Sheriff", Innocent="Innocent" }
+local RoleLabels = {Murderer="Murderer", Sheriff="Sheriff", Innocent="Innocent"}
 
 local function GetRole(player)
     if not player then return "Innocent" end
@@ -128,7 +110,7 @@ local function GetChar() return LocalPlayer.Character end
 local function GetRoot() local c=GetChar(); return c and c:FindFirstChild("HumanoidRootPart") end
 local function GetHum() local c=GetChar(); return c and c:FindFirstChildOfClass("Humanoid") end
 
-local SoundIDs = { Click="6042629064", Toggle="6907343749", Whoosh="5049203525", Ding="6908318381" }
+local SoundIDs = {Click="6042629064", Toggle="6907343749", Whoosh="5049203525", Ding="6908318381"}
 local function PlaySound(t)
     if not Config.SoundEnabled then return end
     local id = t and SoundIDs[t] or SoundIDs.Click
@@ -148,7 +130,19 @@ local function GetPing()
     return 0
 end
 
--- Toast notification system
+--======================= SCREEN GUI SETUP ==========================
+-- ScreenGui FIRST so ShowToast can reference it
+local oldGui = CoreGui:FindFirstChild("DeltaX_MM2_Mono")
+if oldGui then oldGui:Destroy() end
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "DeltaX_MM2_Mono"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+ScreenGui.IgnoreGuiInset = true
+ScreenGui.Parent = CoreGui
+
+-- Toast notification system (now ScreenGui exists)
 local function ShowToast(text)
     local toast = Instance.new("TextLabel")
     toast.Size = UDim2.new(0, 170, 0, 26)
@@ -175,18 +169,54 @@ local function ShowToast(text)
     end)
 end
 
---======================= SCREEN GUI SETUP ==========================--
-local oldGui = CoreGui:FindFirstChild("DeltaX_MM2_Mono")
-if oldGui then oldGui:Destroy() end
+--======================== MAIN WINDOW ==============================
+local MainWindow = Instance.new("Frame")
+MainWindow.Name = "MainWindow"
+MainWindow.Size = UDim2.new(0, GUI_W, 0, GUI_H)
+MainWindow.Position = UDim2.new(0.5, -GUI_W/2, 0.5, -GUI_H/2)
+MainWindow.BackgroundColor3 = C.Black
+MainWindow.BackgroundTransparency = Config.BGTransparency
+MainWindow.BorderSizePixel = 0
+MainWindow.Parent = ScreenGui
 
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "DeltaX_MM2_Mono"
-ScreenGui.ResetOnSpawn = false
-ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-ScreenGui.IgnoreGuiInset = true
-ScreenGui.Parent = CoreGui
+local mwC = Instance.new("UICorner")
+mwC.CornerRadius = UDim.new(0, 8)
+mwC.Parent = MainWindow
 
---===================== TOGGLE BAR (pill) ===========================--
+local mwS = Instance.new("UIStroke")
+mwS.Color = C.Stroke
+mwS.Thickness = 1
+mwS.Transparency = 0.2
+mwS.Parent = MainWindow
+
+-- Open/Close functions (defined BEFORE ToggleBar uses them)
+local function OpenGUI()
+    State.GUIVisible = true
+    MainWindow.Visible = true
+    MainWindow.Position = UDim2.new(0.5, -GUI_W/2, 0, -GUI_H - 10)
+    MainWindow.BackgroundTransparency = 1
+    local t = TweenService:Create(MainWindow, TweenInfo.new(0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+        Position = UDim2.new(0.5, -GUI_W/2, 0.5, -GUI_H/2),
+        BackgroundTransparency = Config.BGTransparency
+    })
+    t:Play()
+    PlaySound("Click")
+end
+
+local function CloseGUI()
+    State.GUIVisible = false
+    local t = TweenService:Create(MainWindow, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {
+        Position = UDim2.new(0.5, -GUI_W/2, 0, -GUI_H - 10),
+        BackgroundTransparency = 1
+    })
+    t:Play()
+    PlaySound("Click")
+    t.Completed:Connect(function()
+        if not State.GUIVisible then MainWindow.Visible = false end
+    end)
+end
+
+--===================== TOGGLE BAR (pill) ===========================
 local ToggleBar = Instance.new("TextButton")
 ToggleBar.Name = "ToggleBar"
 ToggleBar.Size = UDim2.new(0, BAR_W, 0, BAR_H)
@@ -210,7 +240,7 @@ tbS.Thickness = 1
 tbS.Transparency = 0.3
 tbS.Parent = ToggleBar
 
--- Toggle bar drag + tap logic
+-- Toggle bar drag + tap
 local barDragging = false
 local barDragMoved = false
 local barDragStart, barStartPos
@@ -229,7 +259,13 @@ ToggleBar.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
         TweenService:Create(ToggleBar, TweenInfo.new(0.15), {BackgroundColor3 = C.DarkBg}):Play()
         if not barDragMoved then
-            if State.GUIVisible then CloseGUI() else OpenGUI() end
+            if State.GUIVisible then
+                CloseGUI()
+                ToggleBar.Text = "MM2  ▼"
+            else
+                OpenGUI()
+                ToggleBar.Text = "MM2  ▲"
+            end
         end
         barDragging = false
     end
@@ -252,9 +288,11 @@ end)
 task.spawn(function()
     while true do
         if not State.GUIVisible then
-            TweenService:Create(tbS, TweenInfo.new(1.4, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Transparency = 0.0, Thickness = 1.5}):Play()
+            local t1 = TweenService:Create(tbS, TweenInfo.new(1.4, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Transparency = 0.0, Thickness = 1.5})
+            t1:Play()
             task.wait(1.4)
-            TweenService:Create(tbS, TweenInfo.new(1.4, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Transparency = 0.6, Thickness = 1}):Play()
+            local t2 = TweenService:Create(tbS, TweenInfo.new(1.4, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Transparency = 0.6, Thickness = 1})
+            t2:Play()
             task.wait(1.4)
         else
             tbS.Transparency = 0.25
@@ -262,55 +300,6 @@ task.spawn(function()
         end
     end
 end)
-
---======================== MAIN WINDOW ==============================--
-local MainWindow = Instance.new("Frame")
-MainWindow.Name = "MainWindow"
-MainWindow.Size = UDim2.new(0, GUI_W, 0, GUI_H)
-MainWindow.Position = UDim2.new(0.5, -GUI_W/2, 0.5, -GUI_H/2)
-MainWindow.BackgroundColor3 = C.Black
-MainWindow.BackgroundTransparency = Config.BGTransparency
-MainWindow.BorderSizePixel = 0
-MainWindow.Parent = ScreenGui
-
-local mwC = Instance.new("UICorner")
-mwC.CornerRadius = UDim.new(0, 8)
-mwC.Parent = MainWindow
-
-local mwS = Instance.new("UIStroke")
-mwS.Color = C.Stroke
-mwS.Thickness = 1
-mwS.Transparency = 0.2
-mwS.Parent = MainWindow
-
--- Open/Close animations
-function OpenGUI()
-    State.GUIVisible = true
-    MainWindow.Visible = true
-    MainWindow.Position = UDim2.new(0.5, -GUI_W/2, 0, -GUI_H - 10)
-    MainWindow.BackgroundTransparency = 1
-    ToggleBar.Text = "MM2  ▲"
-    local t = TweenService:Create(MainWindow, TweenInfo.new(0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-        Position = UDim2.new(0.5, -GUI_W/2, 0.5, -GUI_H/2),
-        BackgroundTransparency = Config.BGTransparency
-    })
-    t:Play()
-    PlaySound("Click")
-end
-
-function CloseGUI()
-    State.GUIVisible = false
-    ToggleBar.Text = "MM2  ▼"
-    local t = TweenService:Create(MainWindow, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {
-        Position = UDim2.new(0.5, -GUI_W/2, 0, -GUI_H - 10),
-        BackgroundTransparency = 1
-    })
-    t:Play()
-    PlaySound("Click")
-    t.Completed:Connect(function()
-        if not State.GUIVisible then MainWindow.Visible = false end
-    end)
-end
 
 --======================== TITLE BAR ================================
 local TitleBar = Instance.new("Frame")
@@ -334,7 +323,7 @@ Title.TextSize = 13
 Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.Parent = TitleBar
 
--- Close button (big, touch-friendly, definitely works)
+-- Close button
 local CloseBtn = Instance.new("TextButton")
 CloseBtn.Size = UDim2.new(0, 30, 0, 22)
 CloseBtn.Position = UDim2.new(1, -36, 0, 4)
@@ -363,6 +352,7 @@ CloseBtn.InputEnded:Connect(function(input)
 end)
 CloseBtn.MouseButton1Click:Connect(function()
     CloseGUI()
+    ToggleBar.Text = "MM2  ▼"
 end)
 
 -- FPS/Ping mini display
@@ -503,9 +493,7 @@ local function SelectCategory(name)
             el.Parent = ContentArea
             el.Visible = false
             task.delay(i * 0.015, function()
-                if el.Parent then
-                    el.Visible = true
-                end
+                if el.Parent then el.Visible = true end
             end)
         end
         task.delay(0.1, function()
@@ -529,7 +517,6 @@ local function AddCategory(name, icon)
 
     local c = Instance.new("UICorner"); c.CornerRadius = UDim.new(0, 4); c.Parent = btn
 
-    -- Animated indicator bar
     local ind = Instance.new("Frame")
     ind.Size = UDim2.new(0, 2, 0, 0)
     ind.Position = UDim2.new(0, 0, 0.5, 0)
@@ -539,17 +526,6 @@ local function AddCategory(name, icon)
     ind.Visible = false
     ind.Parent = btn
 
-    -- Status dot (right side)
-    local dot = Instance.new("Frame")
-    dot.Size = UDim2.new(0, 4, 0, 4)
-    dot.Position = UDim2.new(1, -8, 0.5, -2)
-    dot.BackgroundColor3 = C.Subtext
-    dot.BorderSizePixel = 0
-    dot.Visible = false
-    local dC = Instance.new("UICorner"); dC.CornerRadius = UDim.new(1, 0); dC.Parent = dot
-    dot.Parent = btn
-
-    -- Hover effect
     btn.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
             if currentCategory ~= name then
@@ -564,12 +540,9 @@ local function AddCategory(name, icon)
             end
         end
     end)
+    btn.MouseButton1Click:Connect(function() SelectCategory(name) end)
 
-    btn.MouseButton1Click:Connect(function()
-        SelectCategory(name)
-    end)
-
-    Categories[name] = { Button = btn, Elements = {}, Ind = ind, Dot = dot, DotActive = false }
+    Categories[name] = {Button = btn, Elements = {}, Ind = ind}
     return Categories[name]
 end
 
@@ -603,7 +576,6 @@ local function CreateToggle(name, default, callback)
 
     local tc = Instance.new("UICorner"); tc.CornerRadius = UDim.new(0, 10); tc.Parent = toggleBtn
 
-    -- Glow stroke when on
     local glow = Instance.new("UIStroke")
     glow.Color = C.Accent
     glow.Thickness = 0
@@ -625,22 +597,17 @@ local function CreateToggle(name, default, callback)
         PlaySound("Toggle")
         toggleBtn.BackgroundColor3 = state and C.Accent or C.ToggleOff
         knob.BackgroundColor3 = state and C.KnobOn or C.KnobOff
-
         TweenService:Create(knob, TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
             Position = state and UDim2.new(1, -17, 0.5, -7) or UDim2.new(0, 3, 0.5, -7)
         }):Play()
-
-        -- Glow effect
         if state then
             TweenService:Create(glow, TweenInfo.new(0.2), {Thickness = 1, Transparency = 0.4}):Play()
         else
             TweenService:Create(glow, TweenInfo.new(0.2), {Thickness = 0, Transparency = 1}):Play()
         end
-
         if callback then callback(state) end
         ShowToast(name..": "..(state and "ON" or "OFF"))
     end)
-
     return container
 end
 
@@ -696,13 +663,13 @@ local function CreateSlider(name, min, max, default, callback)
     hit.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = true
-            TweenService:Create(knob, TweenInfo.new(0.1), {Size = UDim2.new(0, 16, 0, 16), Position = UDim2.new(knob.Position.X.Scale, -8, 0.5, -8)}):Play()
+            TweenService:Create(knob, TweenInfo.new(0.1), {Size = UDim2.new(0, 16, 0, 16)}):Play()
         end
     end)
     hit.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = false
-            TweenService:Create(knob, TweenInfo.new(0.1), {Size = UDim2.new(0, 12, 0, 12), Position = UDim2.new(knob.Position.X.Scale, -6, 0.5, -6)}):Play()
+            TweenService:Create(knob, TweenInfo.new(0.1), {Size = UDim2.new(0, 12, 0, 12)}):Play()
         end
     end)
     UserInputService.InputChanged:Connect(function(input)
@@ -715,7 +682,6 @@ local function CreateSlider(name, min, max, default, callback)
             if callback then callback(val) end
         end
     end)
-
     return container
 end
 
@@ -730,7 +696,6 @@ local function CreateButton(name, callback)
     btn.BorderSizePixel = 0
     btn.AutoButtonColor = false
     local c = Instance.new("UICorner"); c.CornerRadius = UDim.new(0, 5); c.Parent = btn
-
     btn.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
             TweenService:Create(btn, TweenInfo.new(0.08), {BackgroundColor3 = C.Hover}):Play()
@@ -811,7 +776,6 @@ local function AddElement(cat, el)
 end
 
 --==================== MOBILE FLY CONTROLS ==========================
--- Floating up/down buttons that appear when fly is on
 local flyUpBtn = Instance.new("TextButton")
 flyUpBtn.Size = UDim2.new(0, 42, 0, 42)
 flyUpBtn.Position = UDim2.new(1, -52, 1, -100)
@@ -842,6 +806,7 @@ flyDownBtn.Parent = ScreenGui
 local fdC = Instance.new("UICorner"); fdC.CornerRadius = UDim.new(0, 8); fdC.Parent = flyDownBtn
 local fdS = Instance.new("UIStroke"); fdS.Color = C.Stroke; fdS.Thickness = 1; fdS.Parent = flyDownBtn
 
+-- FIXED: proper input handling, no syntax errors
 flyUpBtn.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
         State.FlyUp = true
@@ -854,6 +819,8 @@ flyUpBtn.InputEnded:Connect(function(input)
         TweenService:Create(flyUpBtn, TweenInfo.new(0.12), {BackgroundColor3 = C.Element}):Play()
     end
 end)
+
+-- FIXED: was "input input.UserInputType" — syntax error that broke everything
 flyDownBtn.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
         State.FlyDown = true
@@ -861,7 +828,7 @@ flyDownBtn.InputBegan:Connect(function(input)
     end
 end)
 flyDownBtn.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.Touch or input input.UserInputType == Enum.UserInputType.MouseButton1 then
+    if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
         State.FlyDown = false
         TweenService:Create(flyDownBtn, TweenInfo.new(0.12), {BackgroundColor3 = C.Element}):Play()
     end
@@ -920,7 +887,6 @@ end))
 
 AddElement("Move", CreateSlider("FlySpeed", 10, 200, 50, function(v) Config.FlySpeed = v end))
 
--- NoClip loop
 RunService.Stepped:Connect(function()
     if Config.NoClip then
         local char = GetChar()
@@ -934,24 +900,18 @@ RunService.Stepped:Connect(function()
     end
 end)
 
--- Fly loop (mobile-compatible: uses Humanoid.MoveDirection + buttons)
 RunService.RenderStepped:Connect(function()
     if Config.Fly and State.FlyVelocity and State.FlyGyro then
         local root = GetRoot()
         if root then
             State.FlyGyro.CFrame = Camera.CFrame
-            -- Read movement from thumbstick via Humanoid.MoveDirection
             local hum = GetHum()
             local moveDir = hum and hum.MoveDirection or Vector3.new(0, 0, 0)
-            -- Convert to camera-relative world direction
             local camLook = Camera.CFrame.LookVector
             local camRight = Camera.CFrame.RightVector
-            -- moveDir.Z is forward/backward, moveDir.X is left/right (in local space)
             local dir = (camLook * -moveDir.Z) + (camRight * moveDir.X)
-            -- Vertical from buttons or keyboard
             if State.FlyUp then dir = dir + Vector3.new(0, 1, 0) end
             if State.FlyDown then dir = dir - Vector3.new(0, 1, 0) end
-            -- Keyboard fallback
             if UserInputService:IsKeyDown(Enum.KeyCode.Space) then dir = dir + Vector3.new(0, 1, 0) end
             if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then dir = dir - Vector3.new(0, 1, 0) end
             State.FlyVelocity.Velocity = dir * Config.FlySpeed
@@ -972,9 +932,7 @@ AddElement("Visual", CreateToggle("Player ESP", false, function(s)
         State.ESPDrawings = {}
     end
 end))
-
 AddElement("Visual", CreateToggle("Role ESP", false, function(s) Config.RoleESP = s end))
-
 AddElement("Visual", CreateToggle("Chams", false, function(s)
     Config.Chams = s
     if not s then
@@ -982,7 +940,6 @@ AddElement("Visual", CreateToggle("Chams", false, function(s)
         State.ChamsHighlights = {}
     end
 end))
-
 AddElement("Visual", CreateToggle("Item ESP", false, function(s)
     Config.ItemESP = s
     if not s then
@@ -990,7 +947,6 @@ AddElement("Visual", CreateToggle("Item ESP", false, function(s)
         State.ItemESPGuis = {}
     end
 end))
-
 AddElement("Visual", CreateToggle("FullBright", false, function(s)
     Config.FullBright = s
     if s then
@@ -1001,7 +957,6 @@ AddElement("Visual", CreateToggle("FullBright", false, function(s)
     end
 end))
 
--- ESP render
 RunService.RenderStepped:Connect(function()
     if Config.PlayerESP then
         for _, player in pairs(Players:GetPlayers()) do
@@ -1014,7 +969,7 @@ RunService.RenderStepped:Connect(function()
                     local spR = Camera:WorldToViewportPoint(root.Position - Vector3.new(0, 2, 0))
                     if onScreen then
                         if not State.ESPDrawings[player] then
-                            State.ESPDrawings[player] = { box = Drawing.new("Square"), text = Drawing.new("Text") }
+                            State.ESPDrawings[player] = {box = Drawing.new("Square"), text = Drawing.new("Text")}
                             State.ESPDrawings[player].box.Thickness = 2
                             State.ESPDrawings[player].box.Filled = false
                             State.ESPDrawings[player].text.Size = 13
@@ -1263,7 +1218,7 @@ pCountLabel.Text = "Players: 0"
 pCountLabel.TextColor3 = C.Text
 pCountLabel.Font = Enum.Font.Gotham
 pCountLabel.TextSize = 12
-local pC = Instance.new("UICorner"); pC.CornerRadius = UDim.new(0, 5); pC.Parent = pCountLabel
+local pC2 = Instance.new("UICorner"); pC2.CornerRadius = UDim.new(0, 5); pC2.Parent = pCountLabel
 AddElement("Info", pCountLabel)
 
 RunService.RenderStepped:Connect(function()
@@ -1402,16 +1357,13 @@ local function MakeHat(type)
     local head = char:FindFirstChild("Head")
     if not head then return end
     local hat = Instance.new("Part")
-    hat.Name = "HubCHat"
-    hat.CanCollide = false
-    hat.Material = Enum.Material.SmoothPlastic
+    hat.Name = "HubCHat"; hat.CanCollide = false; hat.Material = Enum.Material.SmoothPlastic
     if type == "Tophat" then
         hat.Color = Color3.fromRGB(15,15,15); hat.Size = Vector3.new(1.1,1.6,1.1)
         local brim = Instance.new("Part")
         brim.Name = "HubCBrim"; brim.Size = Vector3.new(1.7,0.15,1.7)
         brim.Color = Color3.fromRGB(15,15,15); brim.CanCollide = false; brim.Parent = hat
-        Instance.new("Weld", hat).Part0 = hat; hat:FindFirstChildOfClass("Weld").Part1 = brim
-        hat:FindFirstChildOfClass("Weld").C0 = CFrame.new(0,-0.8,0)
+        local bw = Instance.new("Weld"); bw.Part0 = hat; bw.Part1 = brim; bw.C0 = CFrame.new(0,-0.8,0); bw.Parent = hat
     elseif type == "Crown" then
         hat.Color = Color3.fromRGB(255,215,0); hat.Size = Vector3.new(1.2,0.7,1.2); hat.Material = Enum.Material.Metal
     elseif type == "Halo" then
@@ -1586,7 +1538,7 @@ local function RefreshPlayers()
             tBtn.Font = Enum.Font.GothamBold
             tBtn.TextSize = 9
             tBtn.BorderSizePixel = 0; tBtn.AutoButtonColor = false
-            local tC2 = Instance.new("UICorner"); tC2.CornerRadius = UDim.new(0, 4); tC2.Parent = tBtn
+            local tC3 = Instance.new("UICorner"); tC3.CornerRadius = UDim.new(0, 4); tC3.Parent = tBtn
             tBtn.InputBegan:Connect(function(i)
                 if i.UserInputType == Enum.UserInputType.Touch or i.UserInputType == Enum.UserInputType.MouseButton1 then
                     TweenService:Create(tBtn, TweenInfo.new(0.08), {BackgroundColor3 = C.Hover}):Play()
@@ -1691,10 +1643,8 @@ RunService.RenderStepped:Connect(function()
             local pct = math.clamp(1 - (dist / maxDist), 0, 1)
             alarmFill.Size = UDim2.new(pct, 0, 1, 0)
             if dist <= maxDist then
-                -- Monochrome: gray → white based on danger
                 local v = math.floor(50 + pct * 205)
                 alarmFill.BackgroundColor3 = Color3.fromRGB(v, v, v)
-                -- Pulse when very close
                 if dist <= 15 then
                     local pulse = (math.sin(tick() * 8) + 1) / 2
                     alarmFill.BackgroundTransparency = 0.2 + pulse * 0.3
